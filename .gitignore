@@ -1,0 +1,9 @@
+.env
+node_modules/
+dist/
+.next/
+.cache/
+tsconfig.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.claude/
