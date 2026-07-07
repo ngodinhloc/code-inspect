@@ -8,6 +8,8 @@ Three things this project is specifically built to demonstrate:
 - **Self-hosted embeddings behind a schema-per-service Postgres.** Embedding Service runs `BAAI/bge-small-en-v1.5` locally via ONNX (no external API, no per-token cost); Index Service, Parse Service, and the API service all share one Postgres instance but never share a schema, each owning its own tables and reading across schemas only via explicit raw SQL where it genuinely needs to. See [Postgres schemas](#postgres-schemas) and [Index Service](#index-service-port-8004).
 - **A graph-structured RAG pipeline with conditional routing, not a fixed linear chain.** Retrieval Service runs LangGraph state machine of 8 nodes — hybrid (vector + keyword) retrieval, reciprocal rank fusion, a free heuristic query-reformulation retry, a conditional reranker skip, and a grounded Claude answer — streaming per-step progress to the frontend as it runs. See [RAG Pipeline](#rag-pipeline) and [Retrieval Service](#retrieval-service-port-8005).
 
+![Screenshot of the Code Inspect chat UI: a project status timeline (Started → Checked Out → Parsed → Indexed → Ready), a user question "what is this project about?", a black CLI-style step trace (Query Understanding → Hybrid Retrieval → Result Fusion → Reranker → Context Builder → Claude, each with a green checkmark), the grounded answer text, and a collapsible "Sources" panel listing five file/symbol/line citations.](screenshot.png)
+
 ---
 
 ## Architecture

@@ -12,16 +12,21 @@ interface ChatWsUpdate {
 
 function StepList({ steps }: { steps: ChatMessage[] }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 font-mono text-xs">
       {steps.map((step, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          {step.status === "hasReplied" ? (
-            <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-          ) : (
-            <Loader2 size={13} className="shrink-0 animate-spin text-indigo-500" />
-          )}
-          {step.actor}
-        </div>
+        <span key={i} className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5">
+            {step.status === "hasReplied" ? (
+              <CheckCircle2 size={13} className="shrink-0 text-emerald-400" />
+            ) : (
+              <Loader2 size={13} className="shrink-0 animate-spin text-amber-400" />
+            )}
+            <span className={step.status === "hasReplied" ? "text-emerald-400" : "text-amber-400"}>
+              {step.actor}
+            </span>
+          </span>
+          {i < steps.length - 1 && <span className="text-sm font-bold text-white">→</span>}
+        </span>
       ))}
     </div>
   );
@@ -33,6 +38,14 @@ export default function QueryChat({ projectId }: { projectId: string }) {
   const [asking, setAsking] = useState(false);
   const [openCitations, setOpenCitations] = useState<Set<number>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
+  const replyEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const last = turns[turns.length - 1];
+    if (last && (last.steps.length > 0 || last.answer != null || last.error != null)) {
+      replyEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [turns]);
 
   function toggleCitations(index: number) {
     setOpenCitations((prev) => {
@@ -149,7 +162,15 @@ export default function QueryChat({ projectId }: { projectId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4">
-        {turns.map((turn, i) => (
+        {turns.map((turn, i) => {
+          const botAvatar = (
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200/70 bg-white text-indigo-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-indigo-400">
+              <Bot size={14} />
+            </span>
+          );
+          const showReplyBox = turn.error != null || turn.answer != null || turn.steps.length === 0;
+
+          return (
           <div key={i} className="flex flex-col gap-2">
             <div className="flex items-end justify-start gap-2">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm">
@@ -159,25 +180,34 @@ export default function QueryChat({ projectId }: { projectId: string }) {
                 {turn.question}
               </div>
             </div>
+
+            {turn.steps.length > 0 && (
+              <div className="flex items-end justify-end gap-2">
+                <div className="w-full max-w-[85%] rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5">
+                  <StepList steps={turn.steps} />
+                </div>
+                <span className="h-7 w-7 shrink-0" aria-hidden="true" />
+              </div>
+            )}
+
+            {showReplyBox && (
             <div className="flex items-end justify-end gap-2">
               <div className="max-w-[85%] rounded-2xl rounded-tr-md border border-zinc-200/70 bg-white px-4 py-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
                 {turn.error ? (
                   <p className="text-red-600 dark:text-red-400">{turn.error}</p>
-                ) : turn.answer == null ? (
-                  turn.steps.length === 0 ? (
-                    <div className="flex items-center gap-1 py-0.5 text-zinc-400 dark:text-zinc-500">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.3s]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.15s]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60" />
-                    </div>
-                  ) : (
-                    <StepList steps={turn.steps} />
-                  )
                 ) : (
                   <>
-                    <p className="whitespace-pre-wrap leading-relaxed text-zinc-900 dark:text-zinc-100">
-                      {turn.answer}
-                    </p>
+                    {turn.answer == null ? (
+                      <div className="flex items-center gap-1 py-0.5 text-zinc-400 dark:text-zinc-500">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.3s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.15s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60" />
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-relaxed text-zinc-900 dark:text-zinc-100">
+                        {turn.answer}
+                      </p>
+                    )}
                     {turn.citations && turn.citations.length > 0 && (
                       <div className="mt-3 overflow-hidden rounded-xl border border-indigo-200 dark:border-indigo-500/30">
                         <button
@@ -224,12 +254,13 @@ export default function QueryChat({ projectId }: { projectId: string }) {
                   </>
                 )}
               </div>
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200/70 bg-white text-indigo-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-indigo-400">
-                <Bot size={14} />
-              </span>
+              {botAvatar}
             </div>
+            )}
           </div>
-        ))}
+          );
+        })}
+        <div ref={replyEndRef} />
       </div>
 
       <div className="sticky bottom-4 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
