@@ -1,5 +1,8 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { EmbeddingService, EmbeddingResult } from '../services/embedding.service';
+import {
+  EmbeddingService,
+  EmbeddingResult,
+} from '../services/embedding.service';
 import { EmbedRequestDto } from '../dto/embed-request.dto';
 
 @Controller('api')

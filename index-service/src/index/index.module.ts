@@ -5,6 +5,11 @@ import { EmbeddingClientService } from './services/embedding-client.service';
 import { SymbolEmbeddingsSchemaService } from './services/symbol-embeddings-schema.service';
 
 @Module({
-  providers: [IndexService, SymbolsReaderService, EmbeddingClientService, SymbolEmbeddingsSchemaService],
+  providers: [
+    IndexService,
+    SymbolsReaderService,
+    EmbeddingClientService,
+    SymbolEmbeddingsSchemaService,
+  ],
 })
 export class IndexModule {}

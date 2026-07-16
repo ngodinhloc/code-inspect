@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
 @Entity('api_endpoints')
 export class ApiEndpoint {
@@ -18,7 +24,12 @@ export class ApiEndpoint {
   @Column({ type: 'varchar', length: 500 })
   path!: string;
 
-  @Column({ name: 'handler_name', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'handler_name',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   handlerName!: string | null;
 
   @Column({ type: 'varchar', length: 40 })

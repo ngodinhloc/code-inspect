@@ -6,6 +6,12 @@ import { RetrievalModule } from './retrieval/retrieval.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [DatabaseModule, RabbitMQModule, RedisModule, RetrievalModule, HealthModule],
+  imports: [
+    DatabaseModule,
+    RabbitMQModule,
+    RedisModule,
+    RetrievalModule,
+    HealthModule,
+  ],
 })
 export class AppModule {}

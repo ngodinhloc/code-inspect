@@ -45,8 +45,12 @@ export class RetrievalGraph {
 
   build() {
     return new StateGraph(RetrievalState)
-      .addNode('query_understanding', (state) => this.queryUnderstandingNode.run(state))
-      .addNode('hybrid_retrieval', (state) => this.hybridRetrievalNode.run(state))
+      .addNode('query_understanding', (state) =>
+        this.queryUnderstandingNode.run(state),
+      )
+      .addNode('hybrid_retrieval', (state) =>
+        this.hybridRetrievalNode.run(state),
+      )
       .addNode('fusion', (state) => this.fusionNode.run(state))
       .addNode('advance_attempt', (state) => this.advanceAttemptNode.run(state))
       .addNode('skip_rerank', (state) => this.skipRerankNode.run(state))

@@ -48,7 +48,12 @@ export function extractMarkdownSymbols(content: string): ExtractedSymbol[] {
   const headings: { level: number; title: string; lineIndex: number }[] = [];
   lines.forEach((line, index) => {
     const match = headingPattern.exec(line);
-    if (match) headings.push({ level: match[1].length, title: match[2], lineIndex: index });
+    if (match)
+      headings.push({
+        level: match[1].length,
+        title: match[2],
+        lineIndex: index,
+      });
   });
 
   const symbols: ExtractedSymbol[] = [];

@@ -33,9 +33,12 @@ export class ParseService implements OnModuleInit {
     private readonly fileWalker: FileWalkerService,
     private readonly treeSitterExtractor: TreeSitterExtractorService,
     @InjectRepository(File) private readonly fileRepo: Repository<File>,
-    @InjectRepository(CodeSymbol) private readonly symbolRepo: Repository<CodeSymbol>,
-    @InjectRepository(SymbolDependency) private readonly dependencyRepo: Repository<SymbolDependency>,
-    @InjectRepository(ApiEndpoint) private readonly endpointRepo: Repository<ApiEndpoint>,
+    @InjectRepository(CodeSymbol)
+    private readonly symbolRepo: Repository<CodeSymbol>,
+    @InjectRepository(SymbolDependency)
+    private readonly dependencyRepo: Repository<SymbolDependency>,
+    @InjectRepository(ApiEndpoint)
+    private readonly endpointRepo: Repository<ApiEndpoint>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -43,11 +46,16 @@ export class ParseService implements OnModuleInit {
       EXCHANGE_PROJECT,
       QUEUE_PARSE_CHECKED_OUT,
       EVENT_PROJECT_CHECKED_OUT,
-      (payload) => this.handleProjectCheckedOut(payload as unknown as ProjectCheckedOutEvent),
+      (payload) =>
+        this.handleProjectCheckedOut(
+          payload as unknown as ProjectCheckedOutEvent,
+        ),
     );
   }
 
-  private async handleProjectCheckedOut(event: ProjectCheckedOutEvent): Promise<void> {
+  private async handleProjectCheckedOut(
+    event: ProjectCheckedOutEvent,
+  ): Promise<void> {
     this.logger.log('ParseService.handleProjectCheckedOut: parsing', {
       projectId: event.projectId,
       repoPath: event.repoPath,
@@ -58,7 +66,11 @@ export class ParseService implements OnModuleInit {
       await this.persist(event.projectId, parsedFiles);
 
       const parsed: ProjectParsedEvent = { projectId: event.projectId };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_PARSED, parsed);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_PARSED,
+        parsed,
+      );
       this.logger.log('ParseService.handleProjectCheckedOut: parsed', {
         projectId: event.projectId,
         files: parsedFiles.length,
@@ -74,7 +86,11 @@ export class ParseService implements OnModuleInit {
         stage: ProjectStatus.PARSED,
         reason: `Failed to parse repository: ${String(err)}`,
       };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_FAILED, failed);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_FAILED,
+        failed,
+      );
     }
   }
 
@@ -117,7 +133,10 @@ export class ParseService implements OnModuleInit {
 
   // Re-parsing a project (redelivered event, or a manual re-run) should replace
   // its rows rather than duplicate them.
-  private async persist(projectId: string, parsedFiles: ParsedFile[]): Promise<void> {
+  private async persist(
+    projectId: string,
+    parsedFiles: ParsedFile[],
+  ): Promise<void> {
     await this.clearProject(projectId);
 
     if (parsedFiles.length > 0) {
@@ -146,7 +165,8 @@ export class ParseService implements OnModuleInit {
         }),
       ),
     );
-    if (endpointEntities.length > 0) await this.endpointRepo.save(endpointEntities);
+    if (endpointEntities.length > 0)
+      await this.endpointRepo.save(endpointEntities);
 
     for (const file of parsedFiles) {
       if (file.symbols.length === 0) continue;
@@ -167,15 +187,26 @@ export class ParseService implements OnModuleInit {
       );
 
       const dependencyEntities = savedSymbols.flatMap((symbol) => {
-        const matchedImports = file.imports.filter((name) => wordBoundaryMatch(name, symbol.content));
-        return matchedImports.map((name) => this.dependencyRepo.create({ symbolId: symbol.id, dependencyName: name }));
+        const matchedImports = file.imports.filter((name) =>
+          wordBoundaryMatch(name, symbol.content),
+        );
+        return matchedImports.map((name) =>
+          this.dependencyRepo.create({
+            symbolId: symbol.id,
+            dependencyName: name,
+          }),
+        );
       });
-      if (dependencyEntities.length > 0) await this.dependencyRepo.save(dependencyEntities);
+      if (dependencyEntities.length > 0)
+        await this.dependencyRepo.save(dependencyEntities);
     }
   }
 
   private async clearProject(projectId: string): Promise<void> {
-    const existingSymbols = await this.symbolRepo.find({ where: { projectId }, select: ['id'] });
+    const existingSymbols = await this.symbolRepo.find({
+      where: { projectId },
+      select: ['id'],
+    });
     const symbolIds = existingSymbols.map((s) => s.id);
     if (symbolIds.length > 0) {
       await this.dependencyRepo.delete({ symbolId: In(symbolIds) });

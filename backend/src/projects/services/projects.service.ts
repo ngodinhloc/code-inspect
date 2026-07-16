@@ -1,8 +1,22 @@
-import { BadRequestException, Injectable, Logger, MessageEvent, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  MessageEvent,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { distinctUntilChanged, from, map, Observable, switchMap, takeWhile, timer } from 'rxjs';
+import {
+  distinctUntilChanged,
+  from,
+  map,
+  Observable,
+  switchMap,
+  takeWhile,
+  timer,
+} from 'rxjs';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
 import { Project } from '../../database/entities/project.entity';
 import { ProjectStatusHistory } from '../../database/entities/project-status-history.entity';
@@ -15,7 +29,10 @@ import {
 } from '../contracts/project.interface';
 
 const POLL_INTERVAL_MS = 2000;
-const TERMINAL_STATUSES: ProjectStatus[] = [ProjectStatus.READY, ProjectStatus.FAILED];
+const TERMINAL_STATUSES: ProjectStatus[] = [
+  ProjectStatus.READY,
+  ProjectStatus.FAILED,
+];
 
 const GITHUB_URL_PATTERN = /^https:\/\/github\.com\/([^/\s]+)\/([^/\s]+?)\/?$/;
 
@@ -34,8 +51,10 @@ export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
-    @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
-    @InjectRepository(ProjectStatusHistory) private readonly historyRepo: Repository<ProjectStatusHistory>,
+    @InjectRepository(Project)
+    private readonly projectRepo: Repository<Project>,
+    @InjectRepository(ProjectStatusHistory)
+    private readonly historyRepo: Repository<ProjectStatusHistory>,
     private readonly rabbitMQService: RabbitMQService,
   ) {}
 
@@ -61,8 +80,16 @@ export class ProjectsService {
     await this.projectRepo.save(project);
     await this.recordHistory(project, ProjectStatus.CREATED, null);
 
-    const event: ProjectStartedEvent = { projectId: uuid, repositoryUrl: project.repositoryUrl, branch };
-    await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_STARTED, event);
+    const event: ProjectStartedEvent = {
+      projectId: uuid,
+      repositoryUrl: project.repositoryUrl,
+      branch,
+    };
+    await this.rabbitMQService.publish(
+      EXCHANGE_PROJECT,
+      EVENT_PROJECT_STARTED,
+      event,
+    );
 
     return this.toResponse(project);
   }
@@ -83,10 +110,17 @@ export class ProjectsService {
     );
   }
 
-  async updateStatus(uuid: string, status: ProjectStatus, reason: string | null = null): Promise<void> {
+  async updateStatus(
+    uuid: string,
+    status: ProjectStatus,
+    reason: string | null = null,
+  ): Promise<void> {
     const project = await this.projectRepo.findOne({ where: { uuid } });
     if (!project) {
-      this.logger.warn('ProjectsService.updateStatus: project not found', { uuid, status });
+      this.logger.warn('ProjectsService.updateStatus: project not found', {
+        uuid,
+        status,
+      });
       return;
     }
     project.status = status;
@@ -95,18 +129,27 @@ export class ProjectsService {
     await this.recordHistory(project, status, reason);
   }
 
-  private async assertPublicRepoExists(owner: string, repo: string): Promise<void> {
+  private async assertPublicRepoExists(
+    owner: string,
+    repo: string,
+  ): Promise<void> {
     let res: Response;
     try {
       res = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
     } catch {
-      throw new BadRequestException(`Unable to reach GitHub to validate ${owner}/${repo}`);
+      throw new BadRequestException(
+        `Unable to reach GitHub to validate ${owner}/${repo}`,
+      );
     }
     if (res.status === 404) {
-      throw new BadRequestException(`GitHub repository ${owner}/${repo} was not found or is not public`);
+      throw new BadRequestException(
+        `GitHub repository ${owner}/${repo} was not found or is not public`,
+      );
     }
     if (!res.ok) {
-      throw new BadRequestException(`Unable to validate repository ${owner}/${repo} (GitHub returned ${res.status})`);
+      throw new BadRequestException(
+        `Unable to validate repository ${owner}/${repo} (GitHub returned ${res.status})`,
+      );
     }
   }
 
@@ -116,8 +159,16 @@ export class ProjectsService {
     return project;
   }
 
-  private async recordHistory(project: Project, status: ProjectStatus, reason: string | null): Promise<void> {
-    const history = this.historyRepo.create({ projectId: project.id, status, reason });
+  private async recordHistory(
+    project: Project,
+    status: ProjectStatus,
+    reason: string | null,
+  ): Promise<void> {
+    const history = this.historyRepo.create({
+      projectId: project.id,
+      status,
+      reason,
+    });
     await this.historyRepo.save(history);
   }
 

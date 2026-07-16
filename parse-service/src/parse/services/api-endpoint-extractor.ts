@@ -5,9 +5,15 @@ const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
 // Regex-based, "first pass" detection per PLANS.md Milestone 2 — good enough to
 // find the common decorator/handler-registration shapes without a framework-aware
 // AST pass. Extend per-framework as false negatives/positives show up.
-export function extractApiEndpoints(content: string, language: string): ExtractedEndpoint[] {
+export function extractApiEndpoints(
+  content: string,
+  language: string,
+): ExtractedEndpoint[] {
   if (language === 'typescript' || language === 'javascript') {
-    return [...extractNestJsEndpoints(content), ...extractExpressEndpoints(content)];
+    return [
+      ...extractNestJsEndpoints(content),
+      ...extractExpressEndpoints(content),
+    ];
   }
   if (language === 'go') {
     return extractGoNetHttpEndpoints(content);
@@ -63,7 +69,12 @@ function extractGoNetHttpEndpoints(content: string): ExtractedEndpoint[] {
   const pattern = /\b\w+\.HandleFunc\(\s*"([^"]*)"\s*,\s*(\w+)/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(content))) {
-    endpoints.push({ method: 'ANY', path: match[1], handlerName: match[2], framework: 'go-net-http' });
+    endpoints.push({
+      method: 'ANY',
+      path: match[1],
+      handlerName: match[2],
+      framework: 'go-net-http',
+    });
   }
   return endpoints;
 }
@@ -71,7 +82,10 @@ function extractGoNetHttpEndpoints(content: string): ExtractedEndpoint[] {
 // Route::get('/path', ...) / Route::post(...) from Laravel.
 function extractLaravelEndpoints(content: string): ExtractedEndpoint[] {
   const endpoints: ExtractedEndpoint[] = [];
-  const pattern = new RegExp(`Route::(${HTTP_METHODS.join('|')})\\(\\s*(?:'([^']*)'|"([^"]*)")`, 'g');
+  const pattern = new RegExp(
+    `Route::(${HTTP_METHODS.join('|')})\\(\\s*(?:'([^']*)'|"([^"]*)")`,
+    'g',
+  );
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(content))) {
     endpoints.push({

@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import * as amqp from 'amqplib';
 
 type MessageHandler = (payload: Record<string, unknown>) => Promise<void>;
@@ -31,7 +36,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private pendingSubscriptions: Subscription[] = [];
 
   async onModuleInit() {
-    const url = process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672/';
+    const url =
+      process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672/';
     await this.connect(url);
     for (const sub of this.pendingSubscriptions) {
       await this.bindSubscription(sub);
@@ -48,10 +54,13 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       if (attempt >= maxAttempts) throw err;
       const delay = Math.min(1000 * attempt, 10000);
-      this.logger.warn(`RabbitMQService.connect: RabbitMQ not ready, retrying in ${delay}ms…`, {
-        attempt,
-        maxAttempts,
-      });
+      this.logger.warn(
+        `RabbitMQService.connect: RabbitMQ not ready, retrying in ${delay}ms…`,
+        {
+          attempt,
+          maxAttempts,
+        },
+      );
       await new Promise((r) => setTimeout(r, delay));
       return this.connect(url, attempt + 1);
     }
@@ -62,18 +71,39 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.connection?.close();
   }
 
-  async publish(exchange: string, routingKey: string, payload: unknown): Promise<void> {
+  async publish(
+    exchange: string,
+    routingKey: string,
+    payload: unknown,
+  ): Promise<void> {
     if (!this.channel) {
-      this.logger.error('RabbitMQService.publish: channel not ready', { exchange, routingKey });
+      this.logger.error('RabbitMQService.publish: channel not ready', {
+        exchange,
+        routingKey,
+      });
       return;
     }
     await this.channel.assertExchange(exchange, 'topic', { durable: true });
-    this.channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true });
-    this.logger.log('RabbitMQService.publish: Published', { ...extractEventIds(payload), exchange, routingKey });
+    this.channel.publish(
+      exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(payload)),
+      { persistent: true },
+    );
+    this.logger.log('RabbitMQService.publish: Published', {
+      ...extractEventIds(payload),
+      exchange,
+      routingKey,
+    });
   }
 
   // Register a consumer; if the connection is not up yet the binding is deferred to onModuleInit.
-  async subscribe(exchange: string, queue: string, routingKey: string, handler: MessageHandler): Promise<void> {
+  async subscribe(
+    exchange: string,
+    queue: string,
+    routingKey: string,
+    handler: MessageHandler,
+  ): Promise<void> {
     const sub: Subscription = { exchange, queue, routingKey, handler };
     if (!this.channel) {
       this.pendingSubscriptions.push(sub);
@@ -82,7 +112,12 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.bindSubscription(sub);
   }
 
-  private async bindSubscription({ exchange, queue, routingKey, handler }: Subscription): Promise<void> {
+  private async bindSubscription({
+    exchange,
+    queue,
+    routingKey,
+    handler,
+  }: Subscription): Promise<void> {
     if (!this.channel) return;
     await this.channel.assertExchange(exchange, 'topic', { durable: true });
     await this.channel.assertQueue(queue, { durable: true });
@@ -92,7 +127,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       void (async () => {
         let payload: Record<string, unknown> = {};
         try {
-          payload = JSON.parse(msg.content.toString()) as Record<string, unknown>;
+          payload = JSON.parse(msg.content.toString()) as Record<
+            string,
+            unknown
+          >;
           this.logger.log('RabbitMQService.consume: received', {
             ...extractEventIds(payload),
             exchange,
@@ -112,6 +150,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         }
       })();
     });
-    this.logger.log('RabbitMQService.subscribe: Consuming', { exchange, queue, routingKey });
+    this.logger.log('RabbitMQService.subscribe: Consuming', {
+      exchange,
+      queue,
+      routingKey,
+    });
   }
 }

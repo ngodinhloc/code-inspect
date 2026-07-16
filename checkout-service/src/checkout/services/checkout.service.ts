@@ -26,12 +26,18 @@ export class CheckoutService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await mkdir(REPOSITORIES_DIR, { recursive: true });
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_CHECKOUT_STARTED, EVENT_PROJECT_STARTED, (payload) =>
-      this.handleProjectStarted(payload as unknown as ProjectStartedEvent),
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_CHECKOUT_STARTED,
+      EVENT_PROJECT_STARTED,
+      (payload) =>
+        this.handleProjectStarted(payload as unknown as ProjectStartedEvent),
     );
   }
 
-  private async handleProjectStarted(event: ProjectStartedEvent): Promise<void> {
+  private async handleProjectStarted(
+    event: ProjectStartedEvent,
+  ): Promise<void> {
     const repoPath = `${REPOSITORIES_DIR}/${event.projectId}`;
     this.logger.log('CheckoutService.handleProjectStarted: cloning', {
       projectId: event.projectId,
@@ -55,8 +61,15 @@ export class CheckoutService implements OnModuleInit {
         '1',
       ]);
 
-      const checkedOut: ProjectCheckedOutEvent = { projectId: event.projectId, repoPath };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_CHECKED_OUT, checkedOut);
+      const checkedOut: ProjectCheckedOutEvent = {
+        projectId: event.projectId,
+        repoPath,
+      };
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_CHECKED_OUT,
+        checkedOut,
+      );
       this.logger.log('CheckoutService.handleProjectStarted: checked out', {
         projectId: event.projectId,
         repoPath,
@@ -72,7 +85,11 @@ export class CheckoutService implements OnModuleInit {
         stage: ProjectStatus.CHECKED_OUT,
         reason: `Failed to clone ${event.repositoryUrl}#${event.branch}: ${String(err)}`,
       };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_FAILED, failed);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_FAILED,
+        failed,
+      );
     }
   }
 }

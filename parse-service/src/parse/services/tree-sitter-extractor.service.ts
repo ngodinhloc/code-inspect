@@ -22,7 +22,12 @@ const TS_SYMBOL_QUERY = `
 (interface_declaration name: (type_identifier) @name) @symbol
 (method_definition name: (property_identifier) @name) @symbol
 `;
-const TS_SYMBOL_TYPES: SymbolKind[] = ['function', 'class', 'interface', 'method'];
+const TS_SYMBOL_TYPES: SymbolKind[] = [
+  'function',
+  'class',
+  'interface',
+  'method',
+];
 
 const JS_TS_IMPORT_QUERY = `
 (import_specifier name: (identifier) @name)
@@ -35,7 +40,12 @@ const GO_SYMBOL_QUERY = `
 (type_spec name: (type_identifier) @name type: (interface_type)) @symbol
 (type_spec name: (type_identifier) @name type: (struct_type)) @symbol
 `;
-const GO_SYMBOL_TYPES: SymbolKind[] = ['function', 'method', 'interface', 'class'];
+const GO_SYMBOL_TYPES: SymbolKind[] = [
+  'function',
+  'method',
+  'interface',
+  'class',
+];
 const GO_IMPORT_QUERY = `
 (import_spec path: (interpreted_string_literal) @path)
 `;
@@ -46,7 +56,12 @@ const PHP_SYMBOL_QUERY = `
 (interface_declaration name: (name) @name) @symbol
 (method_declaration name: (name) @name) @symbol
 `;
-const PHP_SYMBOL_TYPES: SymbolKind[] = ['function', 'class', 'interface', 'method'];
+const PHP_SYMBOL_TYPES: SymbolKind[] = [
+  'function',
+  'class',
+  'interface',
+  'method',
+];
 const PHP_IMPORT_QUERY = `
 (namespace_use_clause (name) @name)
 (namespace_use_clause (qualified_name) @name)
@@ -76,7 +91,9 @@ function buildSpec(
     parser,
     symbolQuery: new Parser.Query(language, symbolQueryString),
     symbolTypesByPattern,
-    importQuery: importQueryString ? new Parser.Query(language, importQueryString) : null,
+    importQuery: importQueryString
+      ? new Parser.Query(language, importQueryString)
+      : null,
   };
 }
 
@@ -89,10 +106,25 @@ export class TreeSitterExtractorService {
 
   constructor() {
     this.specs = {
-      javascript: buildSpec(JavaScript, JS_SYMBOL_QUERY, JS_SYMBOL_TYPES, JS_TS_IMPORT_QUERY),
-      typescript: buildSpec(TypeScriptLanguages.typescript, TS_SYMBOL_QUERY, TS_SYMBOL_TYPES, JS_TS_IMPORT_QUERY),
+      javascript: buildSpec(
+        JavaScript,
+        JS_SYMBOL_QUERY,
+        JS_SYMBOL_TYPES,
+        JS_TS_IMPORT_QUERY,
+      ),
+      typescript: buildSpec(
+        TypeScriptLanguages.typescript,
+        TS_SYMBOL_QUERY,
+        TS_SYMBOL_TYPES,
+        JS_TS_IMPORT_QUERY,
+      ),
       go: buildSpec(Go, GO_SYMBOL_QUERY, GO_SYMBOL_TYPES, GO_IMPORT_QUERY),
-      php: buildSpec(Php.php, PHP_SYMBOL_QUERY, PHP_SYMBOL_TYPES, PHP_IMPORT_QUERY),
+      php: buildSpec(
+        Php.php,
+        PHP_SYMBOL_QUERY,
+        PHP_SYMBOL_TYPES,
+        PHP_IMPORT_QUERY,
+      ),
     };
   }
 

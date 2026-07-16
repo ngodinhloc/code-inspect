@@ -13,7 +13,7 @@ const DATABASE_SCHEMA = process.env.DATABASE_SCHEMA ?? 'backend';
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: async () => {
-        await ensureSchemaExists(process.env.DATABASE_URL!, DATABASE_SCHEMA);
+        await ensureSchemaExists(process.env.DATABASE_URL, DATABASE_SCHEMA);
         return {
           type: 'postgres',
           url: process.env.DATABASE_URL,

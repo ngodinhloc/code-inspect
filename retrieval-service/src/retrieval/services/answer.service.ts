@@ -20,7 +20,11 @@ export class AnswerService {
   private readonly logger = new Logger(AnswerService.name);
   private readonly client = new Anthropic();
 
-  async answer(question: string, contextPrompt: string, projectId: string): Promise<AnswerResult> {
+  async answer(
+    question: string,
+    contextPrompt: string,
+    projectId: string,
+  ): Promise<AnswerResult> {
     this.logger.log('AnswerService.answer: calling Claude', {
       projectId,
       model: MODEL,
@@ -40,7 +44,9 @@ export class AnswerService {
     });
 
     if (response.stop_reason === 'refusal') {
-      this.logger.warn('AnswerService.answer: Claude refused to answer', { projectId });
+      this.logger.warn('AnswerService.answer: Claude refused to answer', {
+        projectId,
+      });
       throw new Error('Claude declined to answer this question');
     }
 

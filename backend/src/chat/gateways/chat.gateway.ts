@@ -1,4 +1,8 @@
-import { WebSocketGateway, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
 import { Injectable, Logger } from '@nestjs/common';
 import { WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
@@ -26,8 +30,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @InjectRepository(Chat) private readonly chatRepo: Repository<Chat>,
   ) {}
 
-  async handleConnection(client: WebSocket, req: IncomingMessage): Promise<void> {
-    const uuid = new URL(req.url ?? '', 'http://localhost').searchParams.get('uuid') ?? '';
+  async handleConnection(
+    client: WebSocket,
+    req: IncomingMessage,
+  ): Promise<void> {
+    const uuid =
+      new URL(req.url ?? '', 'http://localhost').searchParams.get('uuid') ?? '';
     if (!UUID_RE.test(uuid)) {
       client.close(1008, 'Expected ?uuid={uuid}');
       return;
@@ -35,7 +43,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const chat = await this.chatRepo.findOne({ where: { uuid } });
     if (!chat) {
-      client.send(JSON.stringify({ event: 'error', data: `Chat ${uuid} not found` }));
+      client.send(
+        JSON.stringify({ event: 'error', data: `Chat ${uuid} not found` }),
+      );
       client.close(1008, 'Chat not found');
       return;
     }
@@ -62,13 +72,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const intervalId = setInterval(async () => {
       if (++polls > MAX_POLLS) {
         this.clearSubscription(client);
-        client.send(JSON.stringify({ event: 'error', data: 'Timed out waiting for an answer.' }));
+        client.send(
+          JSON.stringify({
+            event: 'error',
+            data: 'Timed out waiting for an answer.',
+          }),
+        );
         client.close(1000, 'Timeout');
         return;
       }
 
       try {
-        const cache = await this.redisService.getJson<ChatCache>(`chat:${uuid}`);
+        const cache = await this.redisService.getJson<ChatCache>(
+          `chat:${uuid}`,
+        );
         if (!cache) return;
 
         const payload = JSON.stringify({ event: 'chat-update', data: cache });

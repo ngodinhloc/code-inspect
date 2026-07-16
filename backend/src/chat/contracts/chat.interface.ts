@@ -16,7 +16,13 @@ export const CHAT_CACHE_TTL_SECONDS = 7200;
 // the WS gateway's next poll can push the final state before it disappears.
 export const CHAT_CACHE_CLEANUP_DELAY_MS = 5000;
 
-export type ChatStep = 'query_understanding' | 'hybrid_retrieval' | 'fusion' | 'rerank' | 'context_builder' | 'answer';
+export type ChatStep =
+  | 'query_understanding'
+  | 'hybrid_retrieval'
+  | 'fusion'
+  | 'rerank'
+  | 'context_builder'
+  | 'answer';
 export type ChatMessageStatus = 'isThinking' | 'hasReplied';
 export type ChatRunStatus = 'running' | 'completed' | 'failed';
 

@@ -9,7 +9,9 @@ import { SymbolDependency } from '../database/entities/symbol-dependency.entity'
 import { ApiEndpoint } from '../database/entities/api-endpoint.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([File, CodeSymbol, SymbolDependency, ApiEndpoint])],
+  imports: [
+    TypeOrmModule.forFeature([File, CodeSymbol, SymbolDependency, ApiEndpoint]),
+  ],
   providers: [ParseService, FileWalkerService, TreeSitterExtractorService],
 })
 export class ParseModule {}

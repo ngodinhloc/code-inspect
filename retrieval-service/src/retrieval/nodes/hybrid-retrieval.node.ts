@@ -20,9 +20,16 @@ export class HybridRetrievalNode {
       chatId: state.chatId,
       query: state.expandedQuery,
     });
-    await this.chatManager.appendThinking(state.chatId, 'hybrid_retrieval', 'Hybrid Retrieval');
+    await this.chatManager.appendThinking(
+      state.chatId,
+      'hybrid_retrieval',
+      'Hybrid Retrieval',
+    );
 
-    const queryEmbedding = await this.embeddingClient.embed(state.expandedQuery, state.projectId);
+    const queryEmbedding = await this.embeddingClient.embed(
+      state.expandedQuery,
+      state.projectId,
+    );
     const [vectorResults, ftsResults] = await Promise.all([
       this.hybridRetrieval.vectorSearch(state.projectId, queryEmbedding),
       this.hybridRetrieval.ftsSearch(state.projectId, state.expandedQuery),

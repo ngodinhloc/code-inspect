@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 import { SymbolKind } from '../../parse/contracts/project.interface';
 
 // Named CodeSymbol (not `Symbol`) to avoid shadowing the built-in global.

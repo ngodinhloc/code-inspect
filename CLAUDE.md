@@ -32,7 +32,8 @@ Each backend service (`backend`, `checkout-service`, `parse-service`, `embedding
 ```bash
 npm run start:dev   # nest start --watch
 npm run build        # nest build
-npm run lint          # eslint src --ext .ts
+npm run lint          # eslint "{src,test}/**/*.ts" --fix (ESLint 9 flat config + Prettier)
+npm run format         # prettier --write
 ```
 
 Frontend (`frontend/`, Next.js 16 / React 19):

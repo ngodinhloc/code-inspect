@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-const EMBEDDING_SERVICE_URL = process.env.EMBEDDING_SERVICE_URL ?? 'http://localhost:8000';
+const EMBEDDING_SERVICE_URL =
+  process.env.EMBEDDING_SERVICE_URL ?? 'http://localhost:8000';
 const EMBED_BATCH_SIZE = 64;
 
 export interface EmbedBatchResult {

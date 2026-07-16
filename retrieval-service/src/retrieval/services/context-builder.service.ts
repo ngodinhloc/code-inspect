@@ -22,9 +22,15 @@ export class ContextBuilderService {
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  async build(chunks: RetrievedChunk[], projectId: string): Promise<BuiltContext> {
+  async build(
+    chunks: RetrievedChunk[],
+    projectId: string,
+  ): Promise<BuiltContext> {
     if (chunks.length === 0) {
-      this.logger.warn('ContextBuilderService.build: no chunks to build context from', { projectId });
+      this.logger.warn(
+        'ContextBuilderService.build: no chunks to build context from',
+        { projectId },
+      );
       return { prompt: '', citations: [] };
     }
 
@@ -35,7 +41,10 @@ export class ContextBuilderService {
        WHERE id = ANY($1::int[])`,
       [symbolIds],
     );
-    this.logger.log('ContextBuilderService.build: symbols resolved', { projectId, symbols: rows });
+    this.logger.log('ContextBuilderService.build: symbols resolved', {
+      projectId,
+      symbols: rows,
+    });
     const symbolsById = new Map(rows.map((r) => [r.id, r]));
 
     const sections: string[] = [];
@@ -47,11 +56,17 @@ export class ContextBuilderService {
       const symbolName = symbol?.name ?? 'unknown';
       const startLine = symbol?.startLine ?? 0;
 
-      sections.push(`File: ${filePath}\nSymbol: ${symbolName} (line ${startLine})\n\n${chunk.chunkText}`);
+      sections.push(
+        `File: ${filePath}\nSymbol: ${symbolName} (line ${startLine})\n\n${chunk.chunkText}`,
+      );
       citations.push({ file: filePath, symbol: symbolName, line: startLine });
     }
 
-    this.logger.log('ContextBuilderService.build: done', { projectId, citationCount: citations.length, citations });
+    this.logger.log('ContextBuilderService.build: done', {
+      projectId,
+      citationCount: citations.length,
+      citations,
+    });
     return { prompt: sections.join('\n\n---\n\n'), citations };
   }
 }

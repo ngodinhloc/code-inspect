@@ -18,9 +18,18 @@ export class ContextBuilderNode {
       chatId: state.chatId,
       chunkCount: state.reranked.length,
     });
-    await this.chatManager.appendThinking(state.chatId, 'context_builder', 'Context Builder');
-    const { prompt, citations } = await this.contextBuilder.build(state.reranked, state.projectId);
-    await this.chatManager.setReply(state.chatId, 'context_builder', { chunkCount: state.reranked.length });
+    await this.chatManager.appendThinking(
+      state.chatId,
+      'context_builder',
+      'Context Builder',
+    );
+    const { prompt, citations } = await this.contextBuilder.build(
+      state.reranked,
+      state.projectId,
+    );
+    await this.chatManager.setReply(state.chatId, 'context_builder', {
+      chunkCount: state.reranked.length,
+    });
     this.logger.log('ContextBuilderNode.run: done', {
       projectId: state.projectId,
       chatId: state.chatId,

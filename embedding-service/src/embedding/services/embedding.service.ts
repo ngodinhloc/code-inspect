@@ -23,16 +23,23 @@ export class EmbeddingService implements OnModuleInit {
   private extractor!: FeatureExtractionPipeline;
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('EmbeddingService.onModuleInit: loading model', { modelId: MODEL_ID });
+    this.logger.log('EmbeddingService.onModuleInit: loading model', {
+      modelId: MODEL_ID,
+    });
     this.extractor = await pipeline('feature-extraction', MODEL_ID);
-    this.logger.log('EmbeddingService.onModuleInit: model ready', { modelId: MODEL_ID });
+    this.logger.log('EmbeddingService.onModuleInit: model ready', {
+      modelId: MODEL_ID,
+    });
   }
 
   async embed(texts: string[]): Promise<EmbeddingResult> {
     const embeddings: number[][] = [];
     for (let i = 0; i < texts.length; i += BATCH_SIZE) {
       const batch = texts.slice(i, i + BATCH_SIZE);
-      const output = await this.extractor(batch, { pooling: 'mean', normalize: true });
+      const output = await this.extractor(batch, {
+        pooling: 'mean',
+        normalize: true,
+      });
       embeddings.push(...(output.tolist() as number[][]));
     }
     return { embeddings, model: MODEL_NAME, dimensions: DIMENSIONS };

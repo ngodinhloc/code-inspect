@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -43,7 +48,9 @@ export class ChatService {
   async createChat(dto: CreateChatDto): Promise<{ id: string }> {
     const project = await this.projectsService.getProject(dto.projectId);
     if (project.status !== ProjectStatus.READY) {
-      throw new BadRequestException(`Project ${dto.projectId} is not READY (status: ${project.status})`);
+      throw new BadRequestException(
+        `Project ${dto.projectId} is not READY (status: ${project.status})`,
+      );
     }
 
     const uuid = uuidv4();
@@ -65,10 +72,22 @@ export class ChatService {
       status: 'running',
       updatedAt: new Date().toISOString(),
     };
-    await this.redisService.setJson(this.cacheKey(uuid), cache, CHAT_CACHE_TTL_SECONDS);
+    await this.redisService.setJson(
+      this.cacheKey(uuid),
+      cache,
+      CHAT_CACHE_TTL_SECONDS,
+    );
 
-    const event: ChatStartedEvent = { chatId: uuid, projectId: dto.projectId, question: dto.question };
-    await this.rabbitMQService.publish(EXCHANGE_CHAT, EVENT_CHAT_STARTED, event);
+    const event: ChatStartedEvent = {
+      chatId: uuid,
+      projectId: dto.projectId,
+      question: dto.question,
+    };
+    await this.rabbitMQService.publish(
+      EXCHANGE_CHAT,
+      EVENT_CHAT_STARTED,
+      event,
+    );
 
     return { id: uuid };
   }
@@ -80,19 +99,31 @@ export class ChatService {
   }
 
   async listByProject(projectId: string): Promise<ChatResponse[]> {
-    const chats = await this.chatRepo.find({ where: { projectId }, order: { createdAt: 'ASC' } });
+    const chats = await this.chatRepo.find({
+      where: { projectId },
+      order: { createdAt: 'ASC' },
+    });
     return chats.map((chat) => this.toResponse(chat));
   }
 
   // Called by ChatEventsService once retrieval-service publishes chat.completed
   // or chat.failed — persists the live Redis state as the final Postgres row.
-  async finalize(uuid: string, status: 'completed' | 'failed', reason: string | null): Promise<void> {
+  async finalize(
+    uuid: string,
+    status: 'completed' | 'failed',
+    reason: string | null,
+  ): Promise<void> {
     const chat = await this.chatRepo.findOne({ where: { uuid } });
     if (!chat) {
-      this.logger.warn('ChatService.finalize: chat not found', { uuid, status });
+      this.logger.warn('ChatService.finalize: chat not found', {
+        uuid,
+        status,
+      });
       return;
     }
-    const cache = await this.redisService.getJson<ChatCache>(this.cacheKey(uuid));
+    const cache = await this.redisService.getJson<ChatCache>(
+      this.cacheKey(uuid),
+    );
     chat.contents = cache?.messages ?? [];
     chat.status = status;
     chat.failureReason = reason;

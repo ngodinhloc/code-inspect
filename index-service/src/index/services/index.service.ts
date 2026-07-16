@@ -37,13 +37,19 @@ export class IndexService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_INDEX_PARSED, EVENT_PROJECT_PARSED, (payload) =>
-      this.handleProjectParsed(payload as unknown as ProjectParsedEvent),
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_INDEX_PARSED,
+      EVENT_PROJECT_PARSED,
+      (payload) =>
+        this.handleProjectParsed(payload as unknown as ProjectParsedEvent),
     );
   }
 
   private async handleProjectParsed(event: ProjectParsedEvent): Promise<void> {
-    this.logger.log('IndexService.handleProjectParsed: indexing', { projectId: event.projectId });
+    this.logger.log('IndexService.handleProjectParsed: indexing', {
+      projectId: event.projectId,
+    });
 
     try {
       const symbols = await this.symbolsReader.findByProject(event.projectId);
@@ -51,12 +57,20 @@ export class IndexService implements OnModuleInit {
       const model = await this.embedAndStore(event.projectId, chunks);
 
       const indexed: ProjectIndexedEvent = { projectId: event.projectId };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_INDEXED, indexed);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_INDEXED,
+        indexed,
+      );
 
       // No further stages yet — READY follows INDEXED immediately, per SPECS'
       // design intent that future stages slot in without changing this contract.
       const ready: ProjectReadyEvent = { projectId: event.projectId };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_READY, ready);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_READY,
+        ready,
+      );
 
       this.logger.log('IndexService.handleProjectParsed: indexed', {
         projectId: event.projectId,
@@ -74,7 +88,11 @@ export class IndexService implements OnModuleInit {
         stage: ProjectStatus.INDEXED,
         reason: `Failed to index project: ${String(err)}`,
       };
-      await this.rabbitMQService.publish(EXCHANGE_PROJECT, EVENT_PROJECT_FAILED, failed);
+      await this.rabbitMQService.publish(
+        EXCHANGE_PROJECT,
+        EVENT_PROJECT_FAILED,
+        failed,
+      );
     }
   }
 
@@ -86,18 +104,30 @@ export class IndexService implements OnModuleInit {
     for (const symbol of symbols) {
       const header = `${symbol.type} ${symbol.name} (${symbol.filePath})`;
       chunkContent(symbol.content).forEach((piece, chunkIndex) => {
-        chunks.push({ symbolId: symbol.id, chunkIndex, chunkText: `${header}\n\n${piece}` });
+        chunks.push({
+          symbolId: symbol.id,
+          chunkIndex,
+          chunkText: `${header}\n\n${piece}`,
+        });
       });
     }
     return chunks;
   }
 
   // Re-indexing a project replaces its rows rather than duplicating them.
-  private async embedAndStore(projectId: string, chunks: Chunk[]): Promise<string> {
-    await this.dataSource.query('DELETE FROM "index".symbol_embeddings WHERE project_id = $1', [projectId]);
+  private async embedAndStore(
+    projectId: string,
+    chunks: Chunk[],
+  ): Promise<string> {
+    await this.dataSource.query(
+      'DELETE FROM "index".symbol_embeddings WHERE project_id = $1',
+      [projectId],
+    );
     if (chunks.length === 0) return '';
 
-    const { embeddings, model } = await this.embeddingClient.embedAll(chunks.map((c) => c.chunkText));
+    const { embeddings, model } = await this.embeddingClient.embedAll(
+      chunks.map((c) => c.chunkText),
+    );
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -105,7 +135,14 @@ export class IndexService implements OnModuleInit {
       await this.dataSource.query(
         `INSERT INTO "index".symbol_embeddings (project_id, symbol_id, chunk_index, chunk_text, embedding, model)
          VALUES ($1, $2, $3, $4, $5::vector, $6)`,
-        [projectId, chunk.symbolId, chunk.chunkIndex, chunk.chunkText, vectorLiteral, model],
+        [
+          projectId,
+          chunk.symbolId,
+          chunk.chunkIndex,
+          chunk.chunkText,
+          vectorLiteral,
+          model,
+        ],
       );
     }
     return model;

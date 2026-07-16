@@ -1,4 +1,13 @@
-import { Body, Controller, Get, MessageEvent, Param, ParseUUIDPipe, Post, Sse } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  MessageEvent,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Sse,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ProjectsService } from '../services/projects.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -18,7 +27,9 @@ export class ProjectsController {
   }
 
   @Sse('projects/:id/events')
-  streamProjectEvents(@Param('id', ParseUUIDPipe) id: string): Observable<MessageEvent> {
+  streamProjectEvents(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Observable<MessageEvent> {
     return this.projectsService.streamProjectEvents(id);
   }
 }

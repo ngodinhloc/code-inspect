@@ -7,6 +7,13 @@ import { ChatModule } from './chat/chat.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [DatabaseModule, RabbitMQModule, RedisModule, ProjectsModule, ChatModule, HealthModule],
+  imports: [
+    DatabaseModule,
+    RabbitMQModule,
+    RedisModule,
+    ProjectsModule,
+    ChatModule,
+    HealthModule,
+  ],
 })
 export class AppModule {}

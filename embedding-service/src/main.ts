@@ -10,7 +10,10 @@ import { AppLogger } from './common/logger/app-logger';
 const JSON_BODY_LIMIT = '25mb';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { logger: new AppLogger(), bodyParser: false });
+  const app = await NestFactory.create(AppModule, {
+    logger: new AppLogger(),
+    bodyParser: false,
+  });
   app.use(json({ limit: JSON_BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: JSON_BODY_LIMIT }));
   app.getHttpAdapter().getInstance().disable('etag');

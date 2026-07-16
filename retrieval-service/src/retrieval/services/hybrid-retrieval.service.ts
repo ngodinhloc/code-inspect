@@ -19,7 +19,10 @@ export class HybridRetrievalService {
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  async vectorSearch(projectId: string, queryEmbedding: number[]): Promise<RetrievedChunk[]> {
+  async vectorSearch(
+    projectId: string,
+    queryEmbedding: number[],
+  ): Promise<RetrievedChunk[]> {
     const vectorLiteral = `[${queryEmbedding.join(',')}]`;
     const rows = await this.dataSource.query(
       `SELECT id, symbol_id AS "symbolId", chunk_text AS "chunkText"
@@ -29,19 +32,27 @@ export class HybridRetrievalService {
        LIMIT ${CANDIDATE_LIMIT}`,
       [projectId, vectorLiteral],
     );
-    const chunks = rows.map((r: { id: number; symbolId: number; chunkText: string }) => ({
-      embeddingId: r.id,
-      symbolId: r.symbolId,
-      chunkText: r.chunkText,
-    }));
-    this.logger.log('HybridRetrievalService.vectorSearch: done', { projectId, count: chunks.length });
+    const chunks = rows.map(
+      (r: { id: number; symbolId: number; chunkText: string }) => ({
+        embeddingId: r.id,
+        symbolId: r.symbolId,
+        chunkText: r.chunkText,
+      }),
+    );
+    this.logger.log('HybridRetrievalService.vectorSearch: done', {
+      projectId,
+      count: chunks.length,
+    });
     return chunks;
   }
 
   async ftsSearch(projectId: string, query: string): Promise<RetrievedChunk[]> {
     const tsQuery = buildOrTsQuery(query);
     if (!tsQuery) {
-      this.logger.log('HybridRetrievalService.ftsSearch: no lexemes in query, skipping', { projectId });
+      this.logger.log(
+        'HybridRetrievalService.ftsSearch: no lexemes in query, skipping',
+        { projectId },
+      );
       return [];
     }
 
@@ -53,12 +64,18 @@ export class HybridRetrievalService {
        LIMIT ${CANDIDATE_LIMIT}`,
       [projectId, tsQuery],
     );
-    const chunks = rows.map((r: { id: number; symbolId: number; chunkText: string }) => ({
-      embeddingId: r.id,
-      symbolId: r.symbolId,
-      chunkText: r.chunkText,
-    }));
-    this.logger.log('HybridRetrievalService.ftsSearch: done', { projectId, count: chunks.length, symbols: chunks.map((c) => c.symbolId) });
+    const chunks = rows.map(
+      (r: { id: number; symbolId: number; chunkText: string }) => ({
+        embeddingId: r.id,
+        symbolId: r.symbolId,
+        chunkText: r.chunkText,
+      }),
+    );
+    this.logger.log('HybridRetrievalService.ftsSearch: done', {
+      projectId,
+      count: chunks.length,
+      symbols: chunks.map((c) => c.symbolId),
+    });
     return chunks;
   }
 }

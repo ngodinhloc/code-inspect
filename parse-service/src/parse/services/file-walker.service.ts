@@ -2,8 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { open, readdir, stat } from 'fs/promises';
 import { extname, join, relative } from 'path';
 
-const INCLUDED_EXTENSIONS = new Set(['.js', '.ts', '.php', '.go', '.yaml', '.yml', '.md']);
-const EXCLUDED_DIRS = new Set(['.git', 'node_modules', 'vendor', 'dist', 'build', 'coverage']);
+const INCLUDED_EXTENSIONS = new Set([
+  '.js',
+  '.ts',
+  '.php',
+  '.go',
+  '.yaml',
+  '.yml',
+  '.md',
+]);
+const EXCLUDED_DIRS = new Set([
+  '.git',
+  'node_modules',
+  'vendor',
+  'dist',
+  'build',
+  'coverage',
+]);
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 const BINARY_SNIFF_BYTES = 512;
 
@@ -50,7 +65,11 @@ export class FileWalkerService {
     return !(await this.looksBinary(absolutePath, stats.size));
   }
 
-  private async walkDir(rootDir: string, currentDir: string, results: WalkedFile[]): Promise<void> {
+  private async walkDir(
+    rootDir: string,
+    currentDir: string,
+    results: WalkedFile[],
+  ): Promise<void> {
     const entries = await readdir(currentDir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory()) {
@@ -64,11 +83,18 @@ export class FileWalkerService {
       if (!INCLUDED_EXTENSIONS.has(extension)) continue;
 
       const absolutePath = join(currentDir, entry.name);
-      results.push({ absolutePath, relativePath: relative(rootDir, absolutePath), extension });
+      results.push({
+        absolutePath,
+        relativePath: relative(rootDir, absolutePath),
+        extension,
+      });
     }
   }
 
-  private async looksBinary(absolutePath: string, size: number): Promise<boolean> {
+  private async looksBinary(
+    absolutePath: string,
+    size: number,
+  ): Promise<boolean> {
     const fd = await open(absolutePath, 'r');
     try {
       const buffer = Buffer.alloc(Math.min(BINARY_SNIFF_BYTES, size));

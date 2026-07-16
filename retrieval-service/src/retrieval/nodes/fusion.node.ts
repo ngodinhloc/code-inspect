@@ -22,9 +22,15 @@ export class FusionNode {
       vectorCount: state.vectorResults.length,
       ftsCount: state.ftsResults.length,
     });
-    await this.chatManager.appendThinking(state.chatId, 'fusion', 'Result Fusion');
+    await this.chatManager.appendThinking(
+      state.chatId,
+      'fusion',
+      'Result Fusion',
+    );
     const fused = reciprocalRankFusion(state.vectorResults, state.ftsResults);
-    await this.chatManager.setReply(state.chatId, 'fusion', { candidateCount: fused.length });
+    await this.chatManager.setReply(state.chatId, 'fusion', {
+      candidateCount: fused.length,
+    });
     this.logger.log('FusionNode.run: done', {
       projectId: state.projectId,
       chatId: state.chatId,
@@ -44,7 +50,8 @@ const routerLogger = new Logger('routeAfterFusion');
 // come back empty, so that's what "this pass came back weak" means here.
 export function routeAfterFusion(state: RetrievalStateType): FusionRoute {
   const route: FusionRoute =
-    state.ftsResults.length === 0 && state.retrievalAttempts < MAX_RETRIEVAL_ATTEMPTS
+    state.ftsResults.length === 0 &&
+    state.retrievalAttempts < MAX_RETRIEVAL_ATTEMPTS
       ? 'reformulate'
       : state.fused.length <= SKIP_RERANK_THRESHOLD
         ? 'skipRerank'

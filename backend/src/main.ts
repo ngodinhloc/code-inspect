@@ -15,7 +15,7 @@ async function bootstrap() {
     : ['http://localhost:3000'];
 
   app.enableCors({ origin: corsOrigins, credentials: true });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   app.useWebSocketAdapter(new WsAdapter(app) as any);
   app.use(new LoggingMiddleware().use.bind(new LoggingMiddleware()));
 

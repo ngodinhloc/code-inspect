@@ -15,11 +15,14 @@ export class SkipRerankNode {
   constructor(private readonly chatManager: ChatManagerService) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {
-    this.logger.log('SkipRerankNode.run: skipping Cohere, fused set already small', {
-      projectId: state.projectId,
-      chatId: state.chatId,
-      fusedCount: state.fused.length,
-    });
+    this.logger.log(
+      'SkipRerankNode.run: skipping Cohere, fused set already small',
+      {
+        projectId: state.projectId,
+        chatId: state.chatId,
+        fusedCount: state.fused.length,
+      },
+    );
     await this.chatManager.appendThinking(state.chatId, 'rerank', 'Reranker');
     const reranked = state.fused.slice(0, TOP_N);
     await this.chatManager.setReply(state.chatId, 'rerank', {

@@ -1,5 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
-import { ChatMessage, ChatRunStatus } from '../../chat/contracts/chat.interface';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
+import {
+  ChatMessage,
+  ChatRunStatus,
+} from '../../chat/contracts/chat.interface';
 
 @Entity('chats')
 export class Chat {

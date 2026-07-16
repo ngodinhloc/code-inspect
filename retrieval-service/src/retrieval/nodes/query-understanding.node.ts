@@ -15,9 +15,16 @@ export class QueryUnderstandingNode {
       chatId: state.chatId,
       attempt: state.retrievalAttempts,
     });
-    await this.chatManager.appendThinking(state.chatId, 'query_understanding', 'Query Understanding');
+    await this.chatManager.appendThinking(
+      state.chatId,
+      'query_understanding',
+      'Query Understanding',
+    );
 
-    const expandedQuery = state.retrievalAttempts === 0 ? state.question : reformulateQuery(state.question);
+    const expandedQuery =
+      state.retrievalAttempts === 0
+        ? state.question
+        : reformulateQuery(state.question);
 
     await this.chatManager.setReply(state.chatId, 'query_understanding', {
       expandedQuery,

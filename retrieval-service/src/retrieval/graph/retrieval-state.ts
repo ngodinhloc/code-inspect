@@ -18,8 +18,14 @@ export const RetrievalState = Annotation.Root({
   fused: Annotation<RetrievedChunk[]>,
   // Defaulted: the skipRerank path (small fused set) never runs RerankNode,
   // so reranked/usedCohere must have a value before ContextBuilderNode reads them.
-  reranked: Annotation<RetrievedChunk[]>({ reducer: (_left, right) => right, default: () => [] }),
-  usedCohere: Annotation<boolean>({ reducer: (_left, right) => right, default: () => false }),
+  reranked: Annotation<RetrievedChunk[]>({
+    reducer: (_left, right) => right,
+    default: () => [],
+  }),
+  usedCohere: Annotation<boolean>({
+    reducer: (_left, right) => right,
+    default: () => false,
+  }),
   prompt: Annotation<string>,
   citations: Annotation<ChatCitation[]>,
   answer: Annotation<string>,

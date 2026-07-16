@@ -24,13 +24,19 @@ export class RerankNode {
       state.fused,
       state.projectId,
     );
-    await this.chatManager.setReply(state.chatId, 'rerank', { rerankedCount: reranked.length, usedCohere });
+    await this.chatManager.setReply(state.chatId, 'rerank', {
+      rerankedCount: reranked.length,
+      usedCohere,
+    });
     this.logger.log('RerankNode.run: done', {
       projectId: state.projectId,
       chatId: state.chatId,
       rerankedCount: reranked.length,
       usedCohere,
-      reranked: reranked.map(({ embeddingId, symbolId }) => ({ embeddingId, symbolId })),
+      reranked: reranked.map(({ embeddingId, symbolId }) => ({
+        embeddingId,
+        symbolId,
+      })),
     });
     return { reranked, usedCohere };
   }

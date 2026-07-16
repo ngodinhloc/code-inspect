@@ -19,8 +19,15 @@ export class AnswerNode {
       contextLength: state.prompt.length,
     });
     await this.chatManager.appendThinking(state.chatId, 'answer', 'Claude');
-    const { answer } = await this.answerService.answer(state.question, state.prompt, state.projectId);
-    await this.chatManager.setReply(state.chatId, 'answer', { answer, citations: state.citations });
+    const { answer } = await this.answerService.answer(
+      state.question,
+      state.prompt,
+      state.projectId,
+    );
+    await this.chatManager.setReply(state.chatId, 'answer', {
+      answer,
+      citations: state.citations,
+    });
     this.logger.log('AnswerNode.run: done', {
       projectId: state.projectId,
       chatId: state.chatId,

@@ -32,25 +32,66 @@ export class ProjectEventsService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_API_CHECKED_OUT, EVENT_PROJECT_CHECKED_OUT, (payload) => {
-      const event = payload as unknown as ProjectCheckedOutEvent;
-      return this.projectsService.updateStatus(event.projectId, ProjectStatus.CHECKED_OUT);
-    });
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_API_PARSED, EVENT_PROJECT_PARSED, (payload) => {
-      const event = payload as unknown as ProjectParsedEvent;
-      return this.projectsService.updateStatus(event.projectId, ProjectStatus.PARSED);
-    });
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_API_INDEXED, EVENT_PROJECT_INDEXED, (payload) => {
-      const event = payload as unknown as ProjectIndexedEvent;
-      return this.projectsService.updateStatus(event.projectId, ProjectStatus.INDEXED);
-    });
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_API_READY, EVENT_PROJECT_READY, (payload) => {
-      const event = payload as unknown as ProjectReadyEvent;
-      return this.projectsService.updateStatus(event.projectId, ProjectStatus.READY);
-    });
-    await this.rabbitMQService.subscribe(EXCHANGE_PROJECT, QUEUE_API_FAILED, EVENT_PROJECT_FAILED, (payload) => {
-      const event = payload as unknown as ProjectFailedEvent;
-      return this.projectsService.updateStatus(event.projectId, ProjectStatus.FAILED, event.reason);
-    });
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_API_CHECKED_OUT,
+      EVENT_PROJECT_CHECKED_OUT,
+      (payload) => {
+        const event = payload as unknown as ProjectCheckedOutEvent;
+        return this.projectsService.updateStatus(
+          event.projectId,
+          ProjectStatus.CHECKED_OUT,
+        );
+      },
+    );
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_API_PARSED,
+      EVENT_PROJECT_PARSED,
+      (payload) => {
+        const event = payload as unknown as ProjectParsedEvent;
+        return this.projectsService.updateStatus(
+          event.projectId,
+          ProjectStatus.PARSED,
+        );
+      },
+    );
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_API_INDEXED,
+      EVENT_PROJECT_INDEXED,
+      (payload) => {
+        const event = payload as unknown as ProjectIndexedEvent;
+        return this.projectsService.updateStatus(
+          event.projectId,
+          ProjectStatus.INDEXED,
+        );
+      },
+    );
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_API_READY,
+      EVENT_PROJECT_READY,
+      (payload) => {
+        const event = payload as unknown as ProjectReadyEvent;
+        return this.projectsService.updateStatus(
+          event.projectId,
+          ProjectStatus.READY,
+        );
+      },
+    );
+    await this.rabbitMQService.subscribe(
+      EXCHANGE_PROJECT,
+      QUEUE_API_FAILED,
+      EVENT_PROJECT_FAILED,
+      (payload) => {
+        const event = payload as unknown as ProjectFailedEvent;
+        return this.projectsService.updateStatus(
+          event.projectId,
+          ProjectStatus.FAILED,
+          event.reason,
+        );
+      },
+    );
   }
 }

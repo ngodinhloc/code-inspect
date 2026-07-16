@@ -37,4 +37,5 @@ export interface ProjectFailedEvent {
 // Symbol kinds this service can extract. `section` covers Markdown headings and
 // `resource` covers Kubernetes-style YAML resources — neither is a programming-language
 // symbol, but both fit the same "named, located, has content" shape.
-export type SymbolKind = 'class' | 'function' | 'method' | 'interface' | 'section' | 'resource';
+export type SymbolKind =
+  'class' | 'function' | 'method' | 'interface' | 'section' | 'resource';
