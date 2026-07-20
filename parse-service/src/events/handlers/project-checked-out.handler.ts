@@ -1,19 +1,26 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { readFile } from 'fs/promises';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { File } from '../../database/entities/file.entity';
 import { CodeSymbol } from '../../database/entities/symbol.entity';
 import { SymbolDependency } from '../../database/entities/symbol-dependency.entity';
 import { ApiEndpoint } from '../../database/entities/api-endpoint.entity';
-import { FileWalkerService, detectLanguage } from './file-walker.service';
-import { TreeSitterExtractorService } from './tree-sitter-extractor.service';
-import { extractYamlSymbols, extractMarkdownSymbols } from './text-extractors';
-import { extractApiEndpoints } from './api-endpoint-extractor';
-import { ParsedFile } from '../types';
 import {
-  EVENT_PROJECT_CHECKED_OUT,
+  FileWalkerService,
+  detectLanguage,
+} from '../../parse/services/file-walker.service';
+import { TreeSitterExtractorService } from '../../parse/services/tree-sitter-extractor.service';
+import {
+  extractYamlSymbols,
+  extractMarkdownSymbols,
+} from '../../parse/services/text-extractors';
+import { extractApiEndpoints } from '../../parse/services/api-endpoint-extractor';
+import { ParsedFile } from '../../parse/types';
+import { EventHandler } from '../contracts/event.interfaces';
+import {
   EVENT_PROJECT_FAILED,
   EVENT_PROJECT_PARSED,
   EXCHANGE_PROJECT,
@@ -21,15 +28,13 @@ import {
   ProjectFailedEvent,
   ProjectParsedEvent,
   ProjectStatus,
-  QUEUE_PARSE_CHECKED_OUT,
-} from '../contracts/project.interface';
+} from '../../parse/contracts/project.interface';
 
 @Injectable()
-export class ParseService implements OnModuleInit {
-  private readonly logger = new Logger(ParseService.name);
-
+export class ProjectCheckedOutHandler implements EventHandler {
   constructor(
     private readonly rabbitMQService: RabbitMQService,
+    private readonly logger: AppLogger,
     private readonly fileWalker: FileWalkerService,
     private readonly treeSitterExtractor: TreeSitterExtractorService,
     @InjectRepository(File) private readonly fileRepo: Repository<File>,
@@ -41,22 +46,16 @@ export class ParseService implements OnModuleInit {
     private readonly endpointRepo: Repository<ApiEndpoint>,
   ) {}
 
-  async onModuleInit(): Promise<void> {
-    await this.rabbitMQService.subscribe(
-      EXCHANGE_PROJECT,
-      QUEUE_PARSE_CHECKED_OUT,
-      EVENT_PROJECT_CHECKED_OUT,
-      (payload) =>
-        this.handleProjectCheckedOut(
-          payload as unknown as ProjectCheckedOutEvent,
-        ),
-    );
-  }
+  async handle(payload: Record<string, unknown>): Promise<void> {
+    const event = payload as unknown as ProjectCheckedOutEvent;
+    if (!event.projectId || !event.repoPath) {
+      this.logger.warn('ProjectCheckedOutHandler.handle: malformed event', {
+        payload,
+      });
+      return;
+    }
 
-  private async handleProjectCheckedOut(
-    event: ProjectCheckedOutEvent,
-  ): Promise<void> {
-    this.logger.log('ParseService.handleProjectCheckedOut: parsing', {
+    this.logger.log('ProjectCheckedOutHandler.handle: parsing', {
       projectId: event.projectId,
       repoPath: event.repoPath,
     });
@@ -71,13 +70,13 @@ export class ParseService implements OnModuleInit {
         EVENT_PROJECT_PARSED,
         parsed,
       );
-      this.logger.log('ParseService.handleProjectCheckedOut: parsed', {
+      this.logger.log('ProjectCheckedOutHandler.handle: parsed', {
         projectId: event.projectId,
         files: parsedFiles.length,
         symbols: parsedFiles.reduce((sum, f) => sum + f.symbols.length, 0),
       });
     } catch (err) {
-      this.logger.error('ParseService.handleProjectCheckedOut: parse failed', {
+      this.logger.error('ProjectCheckedOutHandler.handle: parse failed', {
         projectId: event.projectId,
         error: String(err),
       });

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { RedisService } from '../../redis/services/redis.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import {
   CHAT_CACHE_TTL_SECONDS,
   ChatCache,
@@ -13,9 +14,10 @@ import {
 // within a single handler invocation, never fanned out in parallel.
 @Injectable()
 export class ChatManagerService {
-  private readonly logger = new Logger(ChatManagerService.name);
-
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly logger: AppLogger,
+  ) {}
 
   private key(chatId: string): string {
     return `chat:${chatId}`;

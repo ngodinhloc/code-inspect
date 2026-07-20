@@ -1,15 +1,12 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import Redis from 'ioredis';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RedisService.name);
   private client!: Redis;
+
+  constructor(private readonly logger: AppLogger) {}
 
   onModuleInit() {
     this.client = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {

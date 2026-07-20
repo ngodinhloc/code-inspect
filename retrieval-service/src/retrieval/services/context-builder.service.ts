@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { RetrievedChunk } from './hybrid-retrieval.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { ChatCitation } from '../contracts/chat.interface';
 
 export interface BuiltContext {
@@ -18,9 +19,10 @@ interface SymbolRow {
 
 @Injectable()
 export class ContextBuilderService {
-  private readonly logger = new Logger(ContextBuilderService.name);
-
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly logger: AppLogger,
+  ) {}
 
   async build(
     chunks: RetrievedChunk[],

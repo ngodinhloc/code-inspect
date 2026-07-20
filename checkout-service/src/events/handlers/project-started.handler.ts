@@ -1,51 +1,48 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { existsSync } from 'fs';
 import { mkdir, rm } from 'fs/promises';
 import { simpleGit } from 'simple-git';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
+import { EventHandler } from '../contracts/event.interfaces';
 import {
   EVENT_PROJECT_CHECKED_OUT,
   EVENT_PROJECT_FAILED,
-  EVENT_PROJECT_STARTED,
   EXCHANGE_PROJECT,
   ProjectCheckedOutEvent,
   ProjectFailedEvent,
   ProjectStartedEvent,
   ProjectStatus,
-  QUEUE_CHECKOUT_STARTED,
-} from '../contracts/project.interface';
+} from '../../checkout/contracts/project.interface';
 
 const REPOSITORIES_DIR = process.env.REPOSITORIES_DIR ?? '/repositories';
 const CLONE_TIMEOUT_MS = 5 * 60 * 1000;
 
 @Injectable()
-export class CheckoutService implements OnModuleInit {
-  private readonly logger = new Logger(CheckoutService.name);
+export class ProjectStartedHandler implements EventHandler {
+  constructor(
+    private readonly rabbitMQService: RabbitMQService,
+    private readonly logger: AppLogger,
+  ) {}
 
-  constructor(private readonly rabbitMQService: RabbitMQService) {}
+  async handle(payload: Record<string, unknown>): Promise<void> {
+    const event = payload as unknown as ProjectStartedEvent;
+    if (!event.projectId || !event.repositoryUrl || !event.branch) {
+      this.logger.warn('ProjectStartedHandler.handle: malformed event', {
+        payload,
+      });
+      return;
+    }
 
-  async onModuleInit(): Promise<void> {
-    await mkdir(REPOSITORIES_DIR, { recursive: true });
-    await this.rabbitMQService.subscribe(
-      EXCHANGE_PROJECT,
-      QUEUE_CHECKOUT_STARTED,
-      EVENT_PROJECT_STARTED,
-      (payload) =>
-        this.handleProjectStarted(payload as unknown as ProjectStartedEvent),
-    );
-  }
-
-  private async handleProjectStarted(
-    event: ProjectStartedEvent,
-  ): Promise<void> {
     const repoPath = `${REPOSITORIES_DIR}/${event.projectId}`;
-    this.logger.log('CheckoutService.handleProjectStarted: cloning', {
+    this.logger.log('ProjectStartedHandler.handle: cloning', {
       projectId: event.projectId,
       repositoryUrl: event.repositoryUrl,
       branch: event.branch,
     });
 
     try {
+      await mkdir(REPOSITORIES_DIR, { recursive: true });
       // A redelivered event (e.g. after a crash before ack) would otherwise fail
       // because `git clone` refuses to clone into a non-empty directory.
       if (existsSync(repoPath)) {
@@ -70,12 +67,12 @@ export class CheckoutService implements OnModuleInit {
         EVENT_PROJECT_CHECKED_OUT,
         checkedOut,
       );
-      this.logger.log('CheckoutService.handleProjectStarted: checked out', {
+      this.logger.log('ProjectStartedHandler.handle: checked out', {
         projectId: event.projectId,
         repoPath,
       });
     } catch (err) {
-      this.logger.error('CheckoutService.handleProjectStarted: clone failed', {
+      this.logger.error('ProjectStartedHandler.handle: clone failed', {
         projectId: event.projectId,
         error: String(err),
       });

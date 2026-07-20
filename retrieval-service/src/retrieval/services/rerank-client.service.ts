@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { RetrievedChunk } from './hybrid-retrieval.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 const COHERE_RERANK_URL = 'https://api.cohere.com/v2/rerank';
 const COHERE_MODEL = 'rerank-v4.0-pro';
@@ -12,7 +13,7 @@ export interface RerankResult {
 
 @Injectable()
 export class RerankClientService {
-  private readonly logger = new Logger(RerankClientService.name);
+  constructor(private readonly logger: AppLogger) {}
 
   async rerank(
     query: string,

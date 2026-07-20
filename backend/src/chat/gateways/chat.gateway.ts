@@ -3,12 +3,13 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RedisService } from '../../redis/services/redis.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { Chat } from '../../database/entities/chat.entity';
 import { ChatCache } from '../contracts/chat.interface';
 
@@ -22,12 +23,12 @@ const UUID_RE = /^[0-9a-fA-F-]{36}$/;
 @Injectable()
 @WebSocketGateway({ path: '/ws/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  private readonly logger = new Logger(ChatGateway.name);
   private readonly subscriptions = new Map<WebSocket, NodeJS.Timeout>();
 
   constructor(
     private readonly redisService: RedisService,
     @InjectRepository(Chat) private readonly chatRepo: Repository<Chat>,
+    private readonly logger: AppLogger,
   ) {}
 
   async handleConnection(

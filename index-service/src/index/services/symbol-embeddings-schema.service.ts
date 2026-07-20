@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 // Runs once at boot to create this service's own schema/table/indexes via raw
 // DDL — see database.module.ts for why this bypasses TypeORM's `synchronize`.
@@ -8,9 +9,10 @@ import { DataSource } from 'typeorm';
 // scale; add one once collection sizes make it worth the recall/build tradeoff.
 @Injectable()
 export class SymbolEmbeddingsSchemaService implements OnModuleInit {
-  private readonly logger = new Logger(SymbolEmbeddingsSchemaService.name);
-
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly logger: AppLogger,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS vector');

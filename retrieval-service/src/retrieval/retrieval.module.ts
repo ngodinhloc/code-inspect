@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { RetrievalService } from './services/retrieval.service';
 import { ChatManagerService } from './services/chat-manager.service';
 import { EmbeddingClientService } from './services/embedding-client.service';
 import { HybridRetrievalService } from './services/hybrid-retrieval.service';
@@ -16,10 +15,11 @@ import { RerankNode } from './nodes/rerank.node';
 import { ContextBuilderNode } from './nodes/context-builder.node';
 import { AnswerNode } from './nodes/answer.node';
 
+// Domain support for the retrieval pipeline stage — the LangGraph state
+// machine and every node/service it's built from. Consumed by EventModule's
+// ChatStartedHandler; this module owns no event-dispatch logic itself.
 @Module({
   providers: [
-    RetrievalService,
-    RetrievalGraph,
     ChatManagerService,
     EmbeddingClientService,
     HybridRetrievalService,
@@ -34,6 +34,8 @@ import { AnswerNode } from './nodes/answer.node';
     RerankNode,
     ContextBuilderNode,
     AnswerNode,
+    RetrievalGraph,
   ],
+  exports: [ChatManagerService, RetrievalGraph],
 })
 export class RetrievalModule {}

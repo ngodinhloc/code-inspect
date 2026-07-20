@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +8,7 @@ import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
 import { RedisService } from '../../redis/services/redis.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { ProjectsService } from '../../projects/services/projects.service';
 import { ProjectStatus } from '../../projects/contracts/project.interface';
 import { Chat } from '../../database/entities/chat.entity';
@@ -36,13 +36,12 @@ export interface ChatResponse {
 
 @Injectable()
 export class ChatService {
-  private readonly logger = new Logger(ChatService.name);
-
   constructor(
     @InjectRepository(Chat) private readonly chatRepo: Repository<Chat>,
     private readonly rabbitMQService: RabbitMQService,
     private readonly redisService: RedisService,
     private readonly projectsService: ProjectsService,
+    private readonly logger: AppLogger,
   ) {}
 
   async createChat(dto: CreateChatDto): Promise<{ id: string }> {
@@ -106,8 +105,9 @@ export class ChatService {
     return chats.map((chat) => this.toResponse(chat));
   }
 
-  // Called by ChatEventsService once retrieval-service publishes chat.completed
-  // or chat.failed — persists the live Redis state as the final Postgres row.
+  // Called by ChatCompletedHandler/ChatFailedHandler once retrieval-service
+  // publishes chat.completed or chat.failed — persists the live Redis state
+  // as the final Postgres row.
   async finalize(
     uuid: string,
     status: 'completed' | 'failed',

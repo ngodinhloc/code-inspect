@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   MessageEvent,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,6 +17,7 @@ import {
   timer,
 } from 'rxjs';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { Project } from '../../database/entities/project.entity';
 import { ProjectStatusHistory } from '../../database/entities/project-status-history.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -48,14 +48,13 @@ export interface ProjectResponse {
 
 @Injectable()
 export class ProjectsService {
-  private readonly logger = new Logger(ProjectsService.name);
-
   constructor(
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
     @InjectRepository(ProjectStatusHistory)
     private readonly historyRepo: Repository<ProjectStatusHistory>,
     private readonly rabbitMQService: RabbitMQService,
+    private readonly logger: AppLogger,
   ) {}
 
   async createProject(dto: CreateProjectDto): Promise<ProjectResponse> {

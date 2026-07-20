@@ -1,44 +1,42 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
-import { ChatManagerService } from './chat-manager.service';
-import { RetrievalGraph } from '../graph/retrieval-graph';
+import { ChatManagerService } from '../../retrieval/services/chat-manager.service';
+import { RetrievalGraph } from '../../retrieval/graph/retrieval-graph';
+import { AppLogger } from '../../common/logger/services/app-logger';
+import { EventHandler } from '../contracts/event.interfaces';
 import {
   ChatCompletedEvent,
   ChatFailedEvent,
   ChatStartedEvent,
   EVENT_CHAT_COMPLETED,
   EVENT_CHAT_FAILED,
-  EVENT_CHAT_STARTED,
   EXCHANGE_CHAT,
-  QUEUE_RETRIEVAL_CHAT_STARTED,
-} from '../contracts/chat.interface';
+} from '../../retrieval/contracts/chat.interface';
 
 @Injectable()
-export class RetrievalService implements OnModuleInit {
-  private readonly logger = new Logger(RetrievalService.name);
+export class ChatStartedHandler implements EventHandler {
   private readonly graph: ReturnType<RetrievalGraph['build']>;
 
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly chatManager: ChatManagerService,
+    private readonly logger: AppLogger,
     retrievalGraph: RetrievalGraph,
   ) {
     this.graph = retrievalGraph.build();
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.rabbitMQService.subscribe(
-      EXCHANGE_CHAT,
-      QUEUE_RETRIEVAL_CHAT_STARTED,
-      EVENT_CHAT_STARTED,
-      (payload) =>
-        this.handleChatStarted(payload as unknown as ChatStartedEvent),
-    );
-  }
+  async handle(payload: Record<string, unknown>): Promise<void> {
+    const event = payload as unknown as ChatStartedEvent;
+    if (!event.chatId || !event.projectId || !event.question) {
+      this.logger.warn('ChatStartedHandler.handle: malformed event', {
+        payload,
+      });
+      return;
+    }
 
-  private async handleChatStarted(event: ChatStartedEvent): Promise<void> {
     const { chatId, projectId, question } = event;
-    this.logger.log('RetrievalService.handleChatStarted: answering', {
+    this.logger.log('ChatStartedHandler.handle: answering', {
       projectId,
       chatId,
     });
@@ -60,13 +58,13 @@ export class RetrievalService implements OnModuleInit {
         completed,
       );
 
-      this.logger.log('RetrievalService.handleChatStarted: answered', {
+      this.logger.log('ChatStartedHandler.handle: answered', {
         projectId,
         chatId,
         citations: (result.citations ?? []).length,
       });
     } catch (err) {
-      this.logger.error('RetrievalService.handleChatStarted: failed', {
+      this.logger.error('ChatStartedHandler.handle: failed', {
         projectId,
         chatId,
         error: String(err),

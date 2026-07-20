@@ -1,17 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ChatManagerService } from '../services/chat-manager.service';
 import { EmbeddingClientService } from '../services/embedding-client.service';
 import { HybridRetrievalService } from '../services/hybrid-retrieval.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 @Injectable()
 export class HybridRetrievalNode {
-  private readonly logger = new Logger(HybridRetrievalNode.name);
-
   constructor(
     private readonly chatManager: ChatManagerService,
     private readonly embeddingClient: EmbeddingClientService,
     private readonly hybridRetrieval: HybridRetrievalService,
+    private readonly logger: AppLogger,
   ) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {

@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ChatManagerService } from '../services/chat-manager.service';
 import { RerankClientService } from '../services/rerank-client.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 @Injectable()
 export class RerankNode {
-  private readonly logger = new Logger(RerankNode.name);
-
   constructor(
     private readonly chatManager: ChatManagerService,
     private readonly rerankClient: RerankClientService,
+    private readonly logger: AppLogger,
   ) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {

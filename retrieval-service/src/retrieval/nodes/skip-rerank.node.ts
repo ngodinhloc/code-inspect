@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ChatManagerService } from '../services/chat-manager.service';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 const TOP_N = 5;
@@ -10,9 +11,10 @@ const TOP_N = 5;
 // consistent regardless of which branch fusion took.
 @Injectable()
 export class SkipRerankNode {
-  private readonly logger = new Logger(SkipRerankNode.name);
-
-  constructor(private readonly chatManager: ChatManagerService) {}
+  constructor(
+    private readonly chatManager: ChatManagerService,
+    private readonly logger: AppLogger,
+  ) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {
     this.logger.log(

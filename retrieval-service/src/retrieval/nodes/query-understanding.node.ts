@@ -1,13 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ChatManagerService } from '../services/chat-manager.service';
 import { reformulateQuery } from '../services/reformulate-query';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 @Injectable()
 export class QueryUnderstandingNode {
-  private readonly logger = new Logger(QueryUnderstandingNode.name);
-
-  constructor(private readonly chatManager: ChatManagerService) {}
+  constructor(
+    private readonly chatManager: ChatManagerService,
+    private readonly logger: AppLogger,
+  ) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {
     this.logger.log('QueryUnderstandingNode.run: starting', {

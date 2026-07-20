@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 // Mirrors the sibling candidate-agent's AdvanceRoundNode: a dedicated
@@ -6,7 +7,7 @@ import { RetrievalStateType } from '../graph/retrieval-state';
 // query_understanding, keeping FusionNode's routing logic free of side effects.
 @Injectable()
 export class AdvanceAttemptNode {
-  private readonly logger = new Logger(AdvanceAttemptNode.name);
+  constructor(private readonly logger: AppLogger) {}
 
   run(state: RetrievalStateType): Partial<RetrievalStateType> {
     const retrievalAttempts = state.retrievalAttempts + 1;

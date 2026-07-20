@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as amqp from 'amqplib';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 type MessageHandler = (payload: Record<string, unknown>) => Promise<void>;
 
@@ -30,10 +26,11 @@ function extractEventIds(payload: unknown): Record<string, unknown> {
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RabbitMQService.name);
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
   private pendingSubscriptions: Subscription[] = [];
+
+  constructor(private readonly logger: AppLogger) {}
 
   async onModuleInit() {
     const url =

@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 const EMBEDDING_SERVICE_URL =
   process.env.EMBEDDING_SERVICE_URL ?? 'http://localhost:8000';
 
 @Injectable()
 export class EmbeddingClientService {
-  private readonly logger = new Logger(EmbeddingClientService.name);
+  constructor(private readonly logger: AppLogger) {}
 
   async embed(text: string, projectId: string): Promise<number[]> {
     this.logger.log('EmbeddingClientService.embed: starting', {

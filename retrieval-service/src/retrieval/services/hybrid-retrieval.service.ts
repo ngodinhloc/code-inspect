@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { buildOrTsQuery } from './build-fts-query';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 const CANDIDATE_LIMIT = 50;
 
@@ -15,9 +16,10 @@ export interface RetrievedChunk {
 // service only ever reads it, never writes.
 @Injectable()
 export class HybridRetrievalService {
-  private readonly logger = new Logger(HybridRetrievalService.name);
-
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly logger: AppLogger,
+  ) {}
 
   async vectorSearch(
     projectId: string,

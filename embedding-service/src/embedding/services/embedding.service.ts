@@ -1,5 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 // Xenova's ONNX conversion of BAAI/bge-small-en-v1.5 — transformers.js requires
 // ONNX weights, so it's pulled from this mirror rather than the original repo,
@@ -19,8 +20,9 @@ export interface EmbeddingResult {
 // service is stateless otherwise, so it scales horizontally by replica count.
 @Injectable()
 export class EmbeddingService implements OnModuleInit {
-  private readonly logger = new Logger(EmbeddingService.name);
   private extractor!: FeatureExtractionPipeline;
+
+  constructor(private readonly logger: AppLogger) {}
 
   async onModuleInit(): Promise<void> {
     this.logger.log('EmbeddingService.onModuleInit: loading model', {

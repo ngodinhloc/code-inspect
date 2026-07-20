@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ChatManagerService } from '../services/chat-manager.service';
 import { reciprocalRankFusion } from '../services/fusion';
+import { AppLogger } from '../../common/logger/services/app-logger';
 import { RetrievalStateType } from '../graph/retrieval-state';
 
 // Below this, reranking a handful of candidates down to 5 buys nothing.
@@ -11,9 +12,10 @@ const MAX_RETRIEVAL_ATTEMPTS = 1;
 
 @Injectable()
 export class FusionNode {
-  private readonly logger = new Logger(FusionNode.name);
-
-  constructor(private readonly chatManager: ChatManagerService) {}
+  constructor(
+    private readonly chatManager: ChatManagerService,
+    private readonly logger: AppLogger,
+  ) {}
 
   async run(state: RetrievalStateType): Promise<Partial<RetrievalStateType>> {
     this.logger.log('FusionNode.run: starting', {
@@ -42,7 +44,7 @@ export class FusionNode {
 
 export type FusionRoute = 'reformulate' | 'skipRerank' | 'rerank';
 
-const routerLogger = new Logger('routeAfterFusion');
+const routerLogger = new AppLogger();
 
 // vectorSearch has no similarity filter (ORDER BY distance LIMIT 50), so it
 // always returns candidates regardless of relevance — fused.length is never

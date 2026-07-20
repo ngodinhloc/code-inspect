@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
+import { AppLogger } from '../../common/logger/services/app-logger';
 
 const MODEL = 'claude-opus-4-8';
 const MAX_TOKENS = 4096;
@@ -17,8 +18,9 @@ export interface AnswerResult {
 
 @Injectable()
 export class AnswerService {
-  private readonly logger = new Logger(AnswerService.name);
   private readonly client = new Anthropic();
+
+  constructor(private readonly logger: AppLogger) {}
 
   async answer(
     question: string,

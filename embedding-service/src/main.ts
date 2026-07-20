@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
-import { AppLogger } from './common/logger/app-logger';
+import { AppLogger } from './common/logger/services/app-logger';
 
 // Batches of up to 64 code chunks per /api/embed request can exceed Express's
 // default 100kb JSON body limit — bump it well above what any real batch needs.

@@ -1,14 +1,18 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
-import { SymbolsReaderService, SymbolRow } from './symbols-reader.service';
-import { EmbeddingClientService } from './embedding-client.service';
-import { chunkContent } from './chunking';
+import { AppLogger } from '../../common/logger/services/app-logger';
+import {
+  SymbolsReaderService,
+  SymbolRow,
+} from '../../index/services/symbols-reader.service';
+import { EmbeddingClientService } from '../../index/services/embedding-client.service';
+import { chunkContent } from '../../index/services/chunking';
+import { EventHandler } from '../contracts/event.interfaces';
 import {
   EVENT_PROJECT_FAILED,
   EVENT_PROJECT_INDEXED,
-  EVENT_PROJECT_PARSED,
   EVENT_PROJECT_READY,
   EXCHANGE_PROJECT,
   ProjectFailedEvent,
@@ -16,8 +20,7 @@ import {
   ProjectParsedEvent,
   ProjectReadyEvent,
   ProjectStatus,
-  QUEUE_INDEX_PARSED,
-} from '../contracts/project.interface';
+} from '../../index/contracts/project.interface';
 
 interface Chunk {
   symbolId: number;
@@ -26,28 +29,25 @@ interface Chunk {
 }
 
 @Injectable()
-export class IndexService implements OnModuleInit {
-  private readonly logger = new Logger(IndexService.name);
-
+export class ProjectParsedHandler implements EventHandler {
   constructor(
     private readonly rabbitMQService: RabbitMQService,
+    private readonly logger: AppLogger,
     private readonly symbolsReader: SymbolsReaderService,
     private readonly embeddingClient: EmbeddingClientService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
-  async onModuleInit(): Promise<void> {
-    await this.rabbitMQService.subscribe(
-      EXCHANGE_PROJECT,
-      QUEUE_INDEX_PARSED,
-      EVENT_PROJECT_PARSED,
-      (payload) =>
-        this.handleProjectParsed(payload as unknown as ProjectParsedEvent),
-    );
-  }
+  async handle(payload: Record<string, unknown>): Promise<void> {
+    const event = payload as unknown as ProjectParsedEvent;
+    if (!event.projectId) {
+      this.logger.warn('ProjectParsedHandler.handle: malformed event', {
+        payload,
+      });
+      return;
+    }
 
-  private async handleProjectParsed(event: ProjectParsedEvent): Promise<void> {
-    this.logger.log('IndexService.handleProjectParsed: indexing', {
+    this.logger.log('ProjectParsedHandler.handle: indexing', {
       projectId: event.projectId,
     });
 
@@ -72,14 +72,14 @@ export class IndexService implements OnModuleInit {
         ready,
       );
 
-      this.logger.log('IndexService.handleProjectParsed: indexed', {
+      this.logger.log('ProjectParsedHandler.handle: indexed', {
         projectId: event.projectId,
         symbols: symbols.length,
         chunks: chunks.length,
         model,
       });
     } catch (err) {
-      this.logger.error('IndexService.handleProjectParsed: indexing failed', {
+      this.logger.error('ProjectParsedHandler.handle: indexing failed', {
         projectId: event.projectId,
         error: String(err),
       });
