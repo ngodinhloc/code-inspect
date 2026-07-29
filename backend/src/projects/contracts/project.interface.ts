@@ -18,14 +18,6 @@ export const EVENT_PROJECT_INDEXED = 'code-inspect.project.indexed';
 export const EVENT_PROJECT_READY = 'code-inspect.project.ready';
 export const EVENT_PROJECT_FAILED = 'code-inspect.project.failed';
 
-// Durable queues this service (the API) binds for events it consumes back
-// from downstream stages, to keep the `projects` table's status in sync.
-export const QUEUE_API_CHECKED_OUT = 'api.project.checked_out';
-export const QUEUE_API_PARSED = 'api.project.parsed';
-export const QUEUE_API_INDEXED = 'api.project.indexed';
-export const QUEUE_API_READY = 'api.project.ready';
-export const QUEUE_API_FAILED = 'api.project.failed';
-
 export interface ProjectStartedEvent {
   projectId: string;
   repositoryUrl: string;

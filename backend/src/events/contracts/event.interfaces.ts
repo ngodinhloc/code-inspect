@@ -4,3 +4,8 @@
 export interface EventHandler {
   handle(payload: Record<string, unknown>): Promise<void>;
 }
+
+// Single durable queue backing every subscription this service makes, across
+// both the project and chat exchanges — one queue, many routing-key bindings,
+// rather than a queue per event.
+export const QUEUE_BACKEND = 'code-inspect.backend.queue';

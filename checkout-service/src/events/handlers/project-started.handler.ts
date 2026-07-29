@@ -4,6 +4,7 @@ import { mkdir, rm } from 'fs/promises';
 import { simpleGit } from 'simple-git';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
 import { AppLogger } from '../../common/logger/services/app-logger';
+import { EnvService } from '../../common/env/services/env.service';
 import { EventHandler } from '../contracts/event.interfaces';
 import {
   EVENT_PROJECT_CHECKED_OUT,
@@ -15,7 +16,6 @@ import {
   ProjectStatus,
 } from '../../checkout/contracts/project.interface';
 
-const REPOSITORIES_DIR = process.env.REPOSITORIES_DIR ?? '/repositories';
 const CLONE_TIMEOUT_MS = 5 * 60 * 1000;
 
 @Injectable()
@@ -23,6 +23,7 @@ export class ProjectStartedHandler implements EventHandler {
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly logger: AppLogger,
+    private readonly envService: EnvService,
   ) {}
 
   async handle(payload: Record<string, unknown>): Promise<void> {
@@ -34,7 +35,8 @@ export class ProjectStartedHandler implements EventHandler {
       return;
     }
 
-    const repoPath = `${REPOSITORIES_DIR}/${event.projectId}`;
+    const repositoriesDir = this.envService.getRepositoriesDir();
+    const repoPath = `${repositoriesDir}/${event.projectId}`;
     this.logger.log('ProjectStartedHandler.handle: cloning', {
       projectId: event.projectId,
       repositoryUrl: event.repositoryUrl,
@@ -42,7 +44,7 @@ export class ProjectStartedHandler implements EventHandler {
     });
 
     try {
-      await mkdir(REPOSITORIES_DIR, { recursive: true });
+      await mkdir(repositoriesDir, { recursive: true });
       // A redelivered event (e.g. after a crash before ack) would otherwise fail
       // because `git clone` refuses to clone into a non-empty directory.
       if (existsSync(repoPath)) {

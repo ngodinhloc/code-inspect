@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
+import { Binding } from '../../rabbitmq/contracts/rabbitmq.interfaces';
 import { MessageProcessor } from './message.processor';
 import {
   EVENT_PROJECT_CHECKED_OUT,
@@ -15,15 +16,15 @@ export class RabbitMqConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    const bindings: Binding[] = [
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_CHECKED_OUT },
+    ];
+
     await this.rabbitMQService.subscribe(
-      EXCHANGE_PROJECT,
       QUEUE_PARSE_CHECKED_OUT,
-      EVENT_PROJECT_CHECKED_OUT,
-      (payload) =>
-        this.messageProcessor.process({
-          ...payload,
-          eventName: EVENT_PROJECT_CHECKED_OUT,
-        }),
+      bindings,
+      (payload, eventName) =>
+        this.messageProcessor.process({ ...payload, eventName }),
     );
   }
 }

@@ -17,7 +17,7 @@ export const EVENT_PROJECT_CHECKED_OUT = 'code-inspect.project.checked_out';
 export const EVENT_PROJECT_PARSED = 'code-inspect.project.parsed';
 export const EVENT_PROJECT_FAILED = 'code-inspect.project.failed';
 
-export const QUEUE_PARSE_CHECKED_OUT = 'parse.project.checked_out';
+export const QUEUE_PARSE_CHECKED_OUT = 'code-inspect.parse.queue';
 
 export interface ProjectCheckedOutEvent {
   projectId: string;

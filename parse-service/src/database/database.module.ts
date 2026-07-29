@@ -5,21 +5,24 @@ import { CodeSymbol } from './entities/symbol.entity';
 import { SymbolDependency } from './entities/symbol-dependency.entity';
 import { ApiEndpoint } from './entities/api-endpoint.entity';
 import { ensureSchemaExists } from './ensure-schema';
+import { EnvService } from '../common/env/services/env.service';
 
 const ENTITIES = [File, CodeSymbol, SymbolDependency, ApiEndpoint];
-const DATABASE_SCHEMA = process.env.DATABASE_SCHEMA ?? 'parse';
 
 // backend, parse-service, and index-service share one Postgres instance but
 // each owns its own schema (backend/parse/index) rather than its own database.
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      useFactory: async () => {
-        await ensureSchemaExists(process.env.DATABASE_URL!, DATABASE_SCHEMA);
+      inject: [EnvService],
+      useFactory: async (envService: EnvService) => {
+        const databaseUrl = envService.getDatabaseUrl();
+        const schema = envService.getDatabaseSchema();
+        await ensureSchemaExists(databaseUrl, schema);
         return {
           type: 'postgres',
-          url: process.env.DATABASE_URL,
-          schema: DATABASE_SCHEMA,
+          url: databaseUrl,
+          schema,
           entities: ENTITIES,
           synchronize: true,
           logging: false,

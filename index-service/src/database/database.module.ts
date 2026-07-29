@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EnvService } from '../common/env/services/env.service';
 
 // No entities registered: TypeORM has no native column type for pgvector's
 // `vector` or Postgres's generated `tsvector` columns, so this service manages
@@ -9,9 +10,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
+      inject: [EnvService],
+      useFactory: (envService: EnvService) => ({
         type: 'postgres',
-        url: process.env.DATABASE_URL,
+        url: envService.getDatabaseUrl(),
         entities: [],
         synchronize: false,
         logging: false,

@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
+import { Binding } from '../../rabbitmq/contracts/rabbitmq.interfaces';
 import { MessageProcessor } from './message.processor';
 import {
   EVENT_CHAT_STARTED,
@@ -15,15 +16,15 @@ export class RabbitMqConsumer implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    const bindings: Binding[] = [
+      { exchange: EXCHANGE_CHAT, routingKey: EVENT_CHAT_STARTED },
+    ];
+
     await this.rabbitMQService.subscribe(
-      EXCHANGE_CHAT,
       QUEUE_RETRIEVAL_CHAT_STARTED,
-      EVENT_CHAT_STARTED,
-      (payload) =>
-        this.messageProcessor.process({
-          ...payload,
-          eventName: EVENT_CHAT_STARTED,
-        }),
+      bindings,
+      (payload, eventName) =>
+        this.messageProcessor.process({ ...payload, eventName }),
     );
   }
 }

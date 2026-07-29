@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { EnvService } from '../../common/env/services/env.service';
 
-const EMBEDDING_SERVICE_URL =
-  process.env.EMBEDDING_SERVICE_URL ?? 'http://localhost:8000';
 const EMBED_BATCH_SIZE = 64;
 
 export interface EmbedBatchResult {
@@ -13,6 +12,8 @@ export interface EmbedBatchResult {
 // its per-request text cap and to keep memory bounded on large projects.
 @Injectable()
 export class EmbeddingClientService {
+  constructor(private readonly envService: EnvService) {}
+
   async embedAll(texts: string[]): Promise<EmbedBatchResult> {
     const embeddings: number[][] = [];
     let model = '';
@@ -26,11 +27,14 @@ export class EmbeddingClientService {
   }
 
   private async embedBatch(texts: string[]): Promise<EmbedBatchResult> {
-    const res = await fetch(`${EMBEDDING_SERVICE_URL}/api/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts }),
-    });
+    const res = await fetch(
+      `${this.envService.getEmbeddingServiceUrl()}/api/embed`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts }),
+      },
+    );
     if (!res.ok) {
       throw new Error(`Embedding service returned ${res.status}`);
     }

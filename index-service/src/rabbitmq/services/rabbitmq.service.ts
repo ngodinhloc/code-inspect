@@ -1,28 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import * as amqp from 'amqplib';
 import { AppLogger } from '../../common/logger/services/app-logger';
-
-type MessageHandler = (payload: Record<string, unknown>) => Promise<void>;
-
-interface Subscription {
-  exchange: string;
-  queue: string;
-  routingKey: string;
-  handler: MessageHandler;
-}
-
-// Every event payload in this platform is a plain object that may carry
-// projectId and/or chatId — pull them out generically so publish logs are
-// traceable per-project (and per-chat, for the chat domain) without this
-// shared service needing to know about any specific event shape.
-function extractEventIds(payload: unknown): Record<string, unknown> {
-  if (typeof payload !== 'object' || payload === null) return {};
-  const { projectId, chatId } = payload as Record<string, unknown>;
-  const ids: Record<string, unknown> = {};
-  if (projectId !== undefined) ids.projectId = projectId;
-  if (chatId !== undefined) ids.chatId = chatId;
-  return ids;
-}
+import { EnvService } from '../../common/env/services/env.service';
+import {
+  Binding,
+  MessageHandler,
+  Subscription,
+} from '../contracts/rabbitmq.interfaces';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
@@ -30,12 +14,13 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private channel: amqp.Channel | null = null;
   private pendingSubscriptions: Subscription[] = [];
 
-  constructor(private readonly logger: AppLogger) {}
+  constructor(
+    private readonly logger: AppLogger,
+    private readonly envService: EnvService,
+  ) {}
 
   async onModuleInit() {
-    const url =
-      process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672/';
-    await this.connect(url);
+    await this.connect(this.envService.getRabbitMqUrl());
     for (const sub of this.pendingSubscriptions) {
       await this.bindSubscription(sub);
     }
@@ -68,40 +53,36 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.connection?.close();
   }
 
+  // this.channel is guaranteed set by the time this runs: publish() is only
+  // ever called from request handlers, which can't execute until
+  // NestFactory.create() (and therefore this service's onModuleInit/connect)
+  // has resolved — see main.ts, where app.listen() only happens after.
   async publish(
     exchange: string,
     routingKey: string,
     payload: unknown,
   ): Promise<void> {
-    if (!this.channel) {
-      this.logger.error('RabbitMQService.publish: channel not ready', {
-        exchange,
-        routingKey,
-      });
-      return;
-    }
-    await this.channel.assertExchange(exchange, 'topic', { durable: true });
-    this.channel.publish(
+    await this.channel!.assertExchange(exchange, 'topic', { durable: true });
+    this.channel!.publish(
       exchange,
       routingKey,
       Buffer.from(JSON.stringify(payload)),
       { persistent: true },
     );
     this.logger.log('RabbitMQService.publish: Published', {
-      ...extractEventIds(payload),
       exchange,
       routingKey,
     });
   }
 
-  // Register a consumer; if the connection is not up yet the binding is deferred to onModuleInit.
+  // Register a consumer for one queue bound to one or more (exchange, routingKey)
+  // bindings; if the connection is not up yet the binding is deferred to onModuleInit.
   async subscribe(
-    exchange: string,
     queue: string,
-    routingKey: string,
+    bindings: Binding[],
     handler: MessageHandler,
   ): Promise<void> {
-    const sub: Subscription = { exchange, queue, routingKey, handler };
+    const sub: Subscription = { queue, bindings, handler };
     if (!this.channel) {
       this.pendingSubscriptions.push(sub);
       return;
@@ -109,48 +90,53 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.bindSubscription(sub);
   }
 
+  // Only called once this.channel is set — either directly from subscribe()
+  // (which only reaches here past its own channel check) or from the
+  // pendingSubscriptions drain in onModuleInit, which runs after connect()
+  // resolves.
   private async bindSubscription({
-    exchange,
     queue,
-    routingKey,
+    bindings,
     handler,
   }: Subscription): Promise<void> {
-    if (!this.channel) return;
-    await this.channel.assertExchange(exchange, 'topic', { durable: true });
-    await this.channel.assertQueue(queue, { durable: true });
-    await this.channel.bindQueue(queue, exchange, routingKey);
-    await this.channel.consume(queue, (msg) => {
+    const exchanges = new Set(bindings.map((b) => b.exchange));
+    for (const exchange of exchanges) {
+      await this.channel!.assertExchange(exchange, 'topic', {
+        durable: true,
+      });
+    }
+    await this.channel!.assertQueue(queue, { durable: true });
+    for (const { exchange, routingKey } of bindings) {
+      await this.channel!.bindQueue(queue, exchange, routingKey);
+    }
+    await this.channel!.consume(queue, (msg) => {
       if (!msg) return;
+      const routingKey = msg.fields.routingKey;
       void (async () => {
-        let payload: Record<string, unknown> = {};
         try {
-          payload = JSON.parse(msg.content.toString()) as Record<
+          const payload = JSON.parse(msg.content.toString()) as Record<
             string,
             unknown
           >;
           this.logger.log('RabbitMQService.consume: received', {
-            ...extractEventIds(payload),
-            exchange,
             queue,
             routingKey,
           });
-          await handler(payload);
-          this.channel?.ack(msg);
+          await handler(payload, routingKey);
+          this.channel!.ack(msg);
         } catch (err) {
           this.logger.error('RabbitMQService.consume: handler failed', {
-            ...extractEventIds(payload),
-            exchange,
             queue,
+            routingKey,
             error: String(err),
           });
-          this.channel?.nack(msg, false, false);
+          this.channel!.nack(msg, false, false);
         }
       })();
     });
     this.logger.log('RabbitMQService.subscribe: Consuming', {
-      exchange,
       queue,
-      routingKey,
+      bindings,
     });
   }
 }

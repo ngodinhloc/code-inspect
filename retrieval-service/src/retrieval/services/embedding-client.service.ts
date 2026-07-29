@@ -1,23 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { AppLogger } from '../../common/logger/services/app-logger';
-
-const EMBEDDING_SERVICE_URL =
-  process.env.EMBEDDING_SERVICE_URL ?? 'http://localhost:8000';
+import { EnvService } from '../../common/env/services/env.service';
 
 @Injectable()
 export class EmbeddingClientService {
-  constructor(private readonly logger: AppLogger) {}
+  constructor(
+    private readonly logger: AppLogger,
+    private readonly envService: EnvService,
+  ) {}
 
   async embed(text: string, projectId: string): Promise<number[]> {
     this.logger.log('EmbeddingClientService.embed: starting', {
       projectId,
       textLength: text.length,
     });
-    const res = await fetch(`${EMBEDDING_SERVICE_URL}/api/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts: [text] }),
-    });
+    const res = await fetch(
+      `${this.envService.getEmbeddingServiceUrl()}/api/embed`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [text] }),
+      },
+    );
     if (!res.ok) {
       this.logger.error('EmbeddingClientService.embed: request failed', {
         projectId,

@@ -18,7 +18,7 @@ export const EVENT_PROJECT_INDEXED = 'code-inspect.project.indexed';
 export const EVENT_PROJECT_READY = 'code-inspect.project.ready';
 export const EVENT_PROJECT_FAILED = 'code-inspect.project.failed';
 
-export const QUEUE_INDEX_PARSED = 'index.project.parsed';
+export const QUEUE_INDEX_PARSED = 'code-inspect.index.queue';
 
 export interface ProjectParsedEvent {
   projectId: string;

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RetrievedChunk } from './hybrid-retrieval.service';
 import { AppLogger } from '../../common/logger/services/app-logger';
+import { EnvService } from '../../common/env/services/env.service';
 
 const COHERE_RERANK_URL = 'https://api.cohere.com/v2/rerank';
 const COHERE_MODEL = 'rerank-v4.0-pro';
@@ -13,14 +14,17 @@ export interface RerankResult {
 
 @Injectable()
 export class RerankClientService {
-  constructor(private readonly logger: AppLogger) {}
+  constructor(
+    private readonly logger: AppLogger,
+    private readonly envService: EnvService,
+  ) {}
 
   async rerank(
     query: string,
     candidates: RetrievedChunk[],
     projectId: string,
   ): Promise<RerankResult> {
-    const apiKey = process.env.COHERE_API_KEY;
+    const apiKey = this.envService.getCohereApiKey();
     if (!apiKey) {
       this.logger.warn(
         'RerankClientService.rerank: no COHERE_API_KEY, passing through top candidates unreranked',

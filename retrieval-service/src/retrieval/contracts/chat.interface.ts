@@ -8,7 +8,7 @@ export const EVENT_CHAT_STARTED = 'code-inspect.chat.started';
 export const EVENT_CHAT_COMPLETED = 'code-inspect.chat.completed';
 export const EVENT_CHAT_FAILED = 'code-inspect.chat.failed';
 
-export const QUEUE_RETRIEVAL_CHAT_STARTED = 'retrieval.chat.started';
+export const QUEUE_RETRIEVAL_CHAT_STARTED = 'code-inspect.retrieval.queue';
 
 export const CHAT_CACHE_TTL_SECONDS = 7200;
 

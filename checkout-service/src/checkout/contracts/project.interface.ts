@@ -17,7 +17,7 @@ export const EVENT_PROJECT_STARTED = 'code-inspect.project.started';
 export const EVENT_PROJECT_CHECKED_OUT = 'code-inspect.project.checked_out';
 export const EVENT_PROJECT_FAILED = 'code-inspect.project.failed';
 
-export const QUEUE_CHECKOUT_STARTED = 'checkout.project.started';
+export const QUEUE_CHECKOUT_STARTED = 'code-inspect.checkout.queue';
 
 export interface ProjectStartedEvent {
   projectId: string;

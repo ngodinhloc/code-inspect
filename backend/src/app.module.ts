@@ -1,4 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { EnvModule } from './common/env/env.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { DatabaseModule } from './database/database.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
@@ -11,6 +12,7 @@ import { LoggingMiddleware } from './common/middleware/logging.middleware';
 
 @Module({
   imports: [
+    EnvModule,
     LoggerModule,
     DatabaseModule,
     RabbitMQModule,

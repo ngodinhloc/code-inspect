@@ -7,9 +7,6 @@ export const EVENT_CHAT_STARTED = 'code-inspect.chat.started';
 export const EVENT_CHAT_COMPLETED = 'code-inspect.chat.completed';
 export const EVENT_CHAT_FAILED = 'code-inspect.chat.failed';
 
-export const QUEUE_API_CHAT_COMPLETED = 'api.chat.completed';
-export const QUEUE_API_CHAT_FAILED = 'api.chat.failed';
-
 // Redis key for the live cache is `chat:{chatId}` (chatId === Chat.uuid).
 export const CHAT_CACHE_TTL_SECONDS = 7200;
 // Grace window between chat.completed/.failed and deleting the Redis key, so

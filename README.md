@@ -136,26 +136,28 @@ See [Retrieval Service](#retrieval-service-port-8005) for what each graph node a
 
 ## RabbitMQ topology
 
-Two topic exchanges — one per domain, each with its own linear lifecycle. Routing key equals the event name; every consumer binds its own durable queue.
+Two topic exchanges — one per domain, each with its own linear lifecycle. Routing key equals the event name. Each service binds a single durable queue, named `code-inspect.{service}.queue`, to every routing key it consumes — one queue per service, not one queue per event.
 
 **`code-inspect.project`** — the ingestion pipeline:
 
 | Publisher | Routing key | Consumer · queue |
 |---|---|---|
-| backend | `code-inspect.project.started` | checkout-service · `checkout.project.started` |
-| checkout-service | `code-inspect.project.checked_out` | backend · `api.project.checked_out`; parse-service · `parse.project.checked_out` |
-| parse-service | `code-inspect.project.parsed` | backend · `api.project.parsed`; index-service · `index.project.parsed` |
-| index-service | `code-inspect.project.indexed` | backend · `api.project.indexed` |
-| index-service | `code-inspect.project.ready` | backend · `api.project.ready` |
-| any service | `code-inspect.project.failed` | backend · `api.project.failed` |
+| backend | `code-inspect.project.started` | checkout-service · `code-inspect.checkout.queue` |
+| checkout-service | `code-inspect.project.checked_out` | backend · `code-inspect.backend.queue`; parse-service · `code-inspect.parse.queue` |
+| parse-service | `code-inspect.project.parsed` | backend · `code-inspect.backend.queue`; index-service · `code-inspect.index.queue` |
+| index-service | `code-inspect.project.indexed` | backend · `code-inspect.backend.queue` |
+| index-service | `code-inspect.project.ready` | backend · `code-inspect.backend.queue` |
+| any service | `code-inspect.project.failed` | backend · `code-inspect.backend.queue` |
 
 **`code-inspect.chat`** — the RAG pipeline:
 
 | Publisher | Routing key | Consumer · queue |
 |---|---|---|
-| backend | `code-inspect.chat.started` | retrieval-service · `retrieval.chat.started` |
-| retrieval-service | `code-inspect.chat.completed` | backend · `api.chat.completed` |
-| retrieval-service | `code-inspect.chat.failed` | backend · `api.chat.failed` |
+| backend | `code-inspect.chat.started` | retrieval-service · `code-inspect.retrieval.queue` |
+| retrieval-service | `code-inspect.chat.completed` | backend · `code-inspect.backend.queue` |
+| retrieval-service | `code-inspect.chat.failed` | backend · `code-inspect.backend.queue` |
+
+`code-inspect.backend.queue` is bound to all 7 routing keys above (5 on `code-inspect.project`, 2 on `code-inspect.chat`) — backend consumes far more events than any other service, so it gets one queue with many bindings rather than seven single-purpose queues. The other four services each subscribe to only one event today, so their queue happens to have a single binding, but every service — regardless of binding count — gets exactly one queue, named `code-inspect.{service}.queue`.
 
 The event contract for each exchange (`ProjectStartedEvent`, `ChatStartedEvent`, …) is hand-duplicated into each service's own `contracts/*.interface.ts` — there's no shared package — so a field added on one side has to be mirrored everywhere it's consumed, same convention as `../model-arena`'s `experiment.interface.ts`.
 
