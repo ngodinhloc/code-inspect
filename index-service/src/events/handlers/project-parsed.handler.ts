@@ -11,14 +11,12 @@ import { EmbeddingClientService } from '../../index/services/embedding-client.se
 import { chunkContent } from '../../index/services/chunking';
 import { EventHandler } from '../contracts/event.interfaces';
 import {
-  EVENT_PROJECT_FAILED,
-  EVENT_PROJECT_INDEXED,
-  EVENT_PROJECT_READY,
+  EVENT_PROJECT_INDEX_COMPLETED,
+  EVENT_PROJECT_INDEX_FAILED,
   EXCHANGE_PROJECT,
   ProjectFailedEvent,
-  ProjectIndexedEvent,
+  ProjectIndexCompletedEvent,
   ProjectParsedEvent,
-  ProjectReadyEvent,
   ProjectStatus,
 } from '../../index/contracts/project.interface';
 
@@ -56,20 +54,15 @@ export class ProjectParsedHandler implements EventHandler {
       const chunks = this.buildChunks(symbols);
       const model = await this.embedAndStore(event.projectId, chunks);
 
-      const indexed: ProjectIndexedEvent = { projectId: event.projectId };
+      // Indexing is the last pipeline stage, so its completion event marks
+      // the project READY directly — no separate "indexed" status/event.
+      const indexCompleted: ProjectIndexCompletedEvent = {
+        projectId: event.projectId,
+      };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_INDEXED,
-        indexed,
-      );
-
-      // No further stages yet — READY follows INDEXED immediately, per SPECS'
-      // design intent that future stages slot in without changing this contract.
-      const ready: ProjectReadyEvent = { projectId: event.projectId };
-      await this.rabbitMQService.publish(
-        EXCHANGE_PROJECT,
-        EVENT_PROJECT_READY,
-        ready,
+        EVENT_PROJECT_INDEX_COMPLETED,
+        indexCompleted,
       );
 
       this.logger.log('ProjectParsedHandler.handle: indexed', {
@@ -90,7 +83,7 @@ export class ProjectParsedHandler implements EventHandler {
       };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_FAILED,
+        EVENT_PROJECT_INDEX_FAILED,
         failed,
       );
     }

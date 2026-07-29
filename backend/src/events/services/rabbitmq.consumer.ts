@@ -4,11 +4,12 @@ import { Binding } from '../../rabbitmq/contracts/rabbitmq.interfaces';
 import { MessageProcessor } from './message.processor';
 import { QUEUE_BACKEND } from '../contracts/event.interfaces';
 import {
-  EVENT_PROJECT_CHECKED_OUT,
-  EVENT_PROJECT_FAILED,
-  EVENT_PROJECT_INDEXED,
-  EVENT_PROJECT_PARSED,
-  EVENT_PROJECT_READY,
+  EVENT_PROJECT_CHECKOUT_COMPLETED,
+  EVENT_PROJECT_CHECKOUT_FAILED,
+  EVENT_PROJECT_PARSE_COMPLETED,
+  EVENT_PROJECT_PARSE_FAILED,
+  EVENT_PROJECT_INDEX_COMPLETED,
+  EVENT_PROJECT_INDEX_FAILED,
   EXCHANGE_PROJECT,
 } from '../../projects/contracts/project.interface';
 import {
@@ -32,11 +33,15 @@ export class RabbitMqConsumer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const bindings: Binding[] = [
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_CHECKED_OUT },
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_PARSED },
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_INDEXED },
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_READY },
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_FAILED },
+      {
+        exchange: EXCHANGE_PROJECT,
+        routingKey: EVENT_PROJECT_CHECKOUT_COMPLETED,
+      },
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_CHECKOUT_FAILED },
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_PARSE_COMPLETED },
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_PARSE_FAILED },
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_INDEX_COMPLETED },
+      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_INDEX_FAILED },
       { exchange: EXCHANGE_CHAT, routingKey: EVENT_CHAT_COMPLETED },
       { exchange: EXCHANGE_CHAT, routingKey: EVENT_CHAT_FAILED },
     ];

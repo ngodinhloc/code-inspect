@@ -3,7 +3,7 @@ import { RabbitMQService } from '../../rabbitmq/services/rabbitmq.service';
 import { Binding } from '../../rabbitmq/contracts/rabbitmq.interfaces';
 import { MessageProcessor } from './message.processor';
 import {
-  EVENT_PROJECT_CHECKED_OUT,
+  EVENT_PROJECT_CHECKOUT_COMPLETED,
   EXCHANGE_PROJECT,
   QUEUE_PARSE_CHECKED_OUT,
 } from '../../parse/contracts/project.interface';
@@ -17,7 +17,10 @@ export class RabbitMqConsumer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const bindings: Binding[] = [
-      { exchange: EXCHANGE_PROJECT, routingKey: EVENT_PROJECT_CHECKED_OUT },
+      {
+        exchange: EXCHANGE_PROJECT,
+        routingKey: EVENT_PROJECT_CHECKOUT_COMPLETED,
+      },
     ];
 
     await this.rabbitMQService.subscribe(

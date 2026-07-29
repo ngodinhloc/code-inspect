@@ -7,8 +7,8 @@ import { AppLogger } from '../../common/logger/services/app-logger';
 import { EnvService } from '../../common/env/services/env.service';
 import { EventHandler } from '../contracts/event.interfaces';
 import {
-  EVENT_PROJECT_CHECKED_OUT,
-  EVENT_PROJECT_FAILED,
+  EVENT_PROJECT_CHECKOUT_COMPLETED,
+  EVENT_PROJECT_CHECKOUT_FAILED,
   EXCHANGE_PROJECT,
   ProjectCheckedOutEvent,
   ProjectFailedEvent,
@@ -66,7 +66,7 @@ export class ProjectStartedHandler implements EventHandler {
       };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_CHECKED_OUT,
+        EVENT_PROJECT_CHECKOUT_COMPLETED,
         checkedOut,
       );
       this.logger.log('ProjectStartedHandler.handle: checked out', {
@@ -86,7 +86,7 @@ export class ProjectStartedHandler implements EventHandler {
       };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_FAILED,
+        EVENT_PROJECT_CHECKOUT_FAILED,
         failed,
       );
     }

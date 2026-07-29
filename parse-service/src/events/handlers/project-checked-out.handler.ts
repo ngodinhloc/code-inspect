@@ -21,8 +21,8 @@ import { extractApiEndpoints } from '../../parse/services/api-endpoint-extractor
 import { ParsedFile } from '../../parse/types';
 import { EventHandler } from '../contracts/event.interfaces';
 import {
-  EVENT_PROJECT_FAILED,
-  EVENT_PROJECT_PARSED,
+  EVENT_PROJECT_PARSE_COMPLETED,
+  EVENT_PROJECT_PARSE_FAILED,
   EXCHANGE_PROJECT,
   ProjectCheckedOutEvent,
   ProjectFailedEvent,
@@ -67,7 +67,7 @@ export class ProjectCheckedOutHandler implements EventHandler {
       const parsed: ProjectParsedEvent = { projectId: event.projectId };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_PARSED,
+        EVENT_PROJECT_PARSE_COMPLETED,
         parsed,
       );
       this.logger.log('ProjectCheckedOutHandler.handle: parsed', {
@@ -87,7 +87,7 @@ export class ProjectCheckedOutHandler implements EventHandler {
       };
       await this.rabbitMQService.publish(
         EXCHANGE_PROJECT,
-        EVENT_PROJECT_FAILED,
+        EVENT_PROJECT_PARSE_FAILED,
         failed,
       );
     }

@@ -121,6 +121,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           this.logger.log('RabbitMQService.consume: received', {
             queue,
             routingKey,
+            payload,
           });
           await handler(payload, routingKey);
           this.channel!.ack(msg);

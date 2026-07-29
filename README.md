@@ -28,27 +28,30 @@ Three things this project is specifically built to demonstrate:
 │  · POST /api/projects — validates the GitHub URL against the GitHub     │
 │    API, writes a Postgres row, publishes code-inspect.project.started   │
 │  · GET /api/projects/:id · GET /api/projects/:id/events (SSE)           │
-│  · Consumes checked_out / parsed / indexed / ready / failed and         │
-│    updates the project's status column accordingly                      │
+│  · Consumes every stage's *.completed / *.failed event and updates      │
+│    the project's status column accordingly                             │
 └────────────┬───────────────────────────────────────────────────────────┘
              │ AMQP — single topic exchange, routing key = event name
 ┌────────────▼───────────────────────────────────────────────────────────┐
 │  RabbitMQ                                                                │
 │  exchange: code-inspect.project                                         │
-│  routing keys: .started · .checked_out · .parsed · .indexed · .ready ·  │
-│                .failed                                                   │
+│  routing keys: .started · .checkedout.completed · .checkout.failed ·    │
+│                .parse.completed · .parse.failed ·                       │
+│                .index.completed · .index.failed                        │
 └───┬────────────────────────┬─────────────────────────┬───────────────────┘
-    │ .started                │ .checked_out             │ .parsed
+    │ .started                │ .checkedout.completed    │ .parse.completed
 ┌───▼───────────────────┐ ┌───▼───────────────────────┐ ┌▼────────────────────────┐
 │ Checkout Service       │ │ Parse Service              │ │ Index Service            │
 │ (port 8001)            │ │ (port 8002 · schema: parse)│ │ (port 8004 · schema:     │
 │ simple-git shallow     │ │ Tree-sitter (JS/TS/PHP/Go) │ │  index)                  │
 │ clone → publishes      │ │ + YAML (k8s resources) +   │ │ reads parse.symbols,     │
-│ .checked_out           │ │ Markdown (sections)        │ │ chunks, calls Embedding  │
-│                        │ │ + regex API-endpoint scan  │ │ Service, writes          │
-│                        │ │ → publishes .parsed        │ │ pgvector + tsvector rows │
-│                        │ │                            │ │ → publishes .indexed,    │
-│                        │ │                            │ │   then .ready            │
+│ .checkedout.completed  │ │ Markdown (sections)        │ │ chunks, calls Embedding  │
+│ (or .checkout.failed)  │ │ + regex API-endpoint scan  │ │ Service, writes          │
+│                        │ │ → publishes .parse.completed│ pgvector + tsvector rows │
+│                        │ │   (or .parse.failed)       │ │ → publishes              │
+│                        │ │                            │ │   .index.completed,      │
+│                        │ │                            │ │   which marks the        │
+│                        │ │                            │ │   project READY          │
 └────────────────────────┘ └────────────────────────────┘ └──────────┬───────────────┘
                                                                        │ HTTP POST /api/embed
                                                             ┌──────────▼────────────────┐
@@ -143,11 +146,12 @@ Two topic exchanges — one per domain, each with its own linear lifecycle. Rout
 | Publisher | Routing key | Consumer · queue |
 |---|---|---|
 | backend | `code-inspect.project.started` | checkout-service · `code-inspect.checkout.queue` |
-| checkout-service | `code-inspect.project.checked_out` | backend · `code-inspect.backend.queue`; parse-service · `code-inspect.parse.queue` |
-| parse-service | `code-inspect.project.parsed` | backend · `code-inspect.backend.queue`; index-service · `code-inspect.index.queue` |
-| index-service | `code-inspect.project.indexed` | backend · `code-inspect.backend.queue` |
-| index-service | `code-inspect.project.ready` | backend · `code-inspect.backend.queue` |
-| any service | `code-inspect.project.failed` | backend · `code-inspect.backend.queue` |
+| checkout-service | `code-inspect.project.checkedout.completed` | backend · `code-inspect.backend.queue`; parse-service · `code-inspect.parse.queue` |
+| checkout-service | `code-inspect.project.checkout.failed` | backend · `code-inspect.backend.queue` |
+| parse-service | `code-inspect.project.parse.completed` | backend · `code-inspect.backend.queue`; index-service · `code-inspect.index.queue` |
+| parse-service | `code-inspect.project.parse.failed` | backend · `code-inspect.backend.queue` |
+| index-service | `code-inspect.project.index.completed` | backend · `code-inspect.backend.queue` |
+| index-service | `code-inspect.project.index.failed` | backend · `code-inspect.backend.queue` |
 
 **`code-inspect.chat`** — the RAG pipeline:
 
@@ -157,7 +161,9 @@ Two topic exchanges — one per domain, each with its own linear lifecycle. Rout
 | retrieval-service | `code-inspect.chat.completed` | backend · `code-inspect.backend.queue` |
 | retrieval-service | `code-inspect.chat.failed` | backend · `code-inspect.backend.queue` |
 
-`code-inspect.backend.queue` is bound to all 7 routing keys above (5 on `code-inspect.project`, 2 on `code-inspect.chat`) — backend consumes far more events than any other service, so it gets one queue with many bindings rather than seven single-purpose queues. The other four services each subscribe to only one event today, so their queue happens to have a single binding, but every service — regardless of binding count — gets exactly one queue, named `code-inspect.{service}.queue`.
+`code-inspect.backend.queue` is bound to all 8 routing keys above (6 on `code-inspect.project`, 2 on `code-inspect.chat`) — backend consumes far more events than any other service, so it gets one queue with many bindings rather than eight single-purpose queues. The other four services each subscribe to only one event today, so their queue happens to have a single binding, but every service — regardless of binding count — gets exactly one queue, named `code-inspect.{service}.queue`.
+
+Every stage publishes its own `.completed` / `.failed` pair rather than sharing one generic `.failed` routing key across stages — `checkout.failed`, `parse.failed`, and `index.failed` are distinct events, so a consumer can bind to (or a human scanning RabbitMQ's management UI can filter to) exactly the failure mode it cares about. Indexing is the last pipeline stage, so `code-inspect.project.index.completed` marks the project `READY` directly — there's no separate `.ready` event.
 
 The event contract for each exchange (`ProjectStartedEvent`, `ChatStartedEvent`, …) is hand-duplicated into each service's own `contracts/*.interface.ts` — there's no shared package — so a field added on one side has to be mirrored everywhere it's consumed, same convention as `../model-arena`'s `experiment.interface.ts`.
 
@@ -194,19 +200,19 @@ Index Service and Retrieval Service are the exceptions to "never read another se
 
 The `ProjectEventsService` is the other half of the API service for ingestion: it subscribes to every downstream lifecycle event and is the *only* code path that writes to `projects.status` — checkout-service, parse-service, and index-service never touch Postgres to report progress, they just publish. `ChatEventsService` plays the equivalent role for chat: it's the only code path that writes a `chats` row's final `status`/`contents`, triggered by consuming `chat.completed`/`chat.failed` from Retrieval Service.
 
-Project lifecycle: `CREATED → CHECKED_OUT → PARSED → INDEXED → READY`, or `FAILED` with a `failureReason` at any stage. Chat lifecycle: `running → completed`, or `failed` with a `failureReason`.
+Project lifecycle: `CREATED → CHECKED_OUT → PARSED → READY`, or `FAILED` with a `failureReason` at any stage — indexing's completion event (`code-inspect.project.index.completed`) marks the project `READY` directly, so `INDEXED` is never actually persisted as a project's status (the enum value only survives as a `stage` label on that stage's failure event). Chat lifecycle: `running → completed`, or `failed` with a `failureReason`.
 
 ---
 
 ## Checkout Service (port 8001)
 
-Subscribes to `code-inspect.project.started`. Shallow-clones (`--single-branch --depth 1`) the repository to `/repositories/{projectId}` via `simple-git`, then publishes `code-inspect.project.checked_out` with the resulting path. A redelivered event first removes any partial clone at that path, so retries are idempotent. Clone failures (bad branch, unreachable repo) publish `code-inspect.project.failed` with the underlying git error as the reason — no repo ever silently disappears from the pipeline.
+Subscribes to `code-inspect.project.started`. Shallow-clones (`--single-branch --depth 1`) the repository to `/repositories/{projectId}` via `simple-git`, then publishes `code-inspect.project.checkedout.completed` with the resulting path. A redelivered event first removes any partial clone at that path, so retries are idempotent. Clone failures (bad branch, unreachable repo) publish `code-inspect.project.checkout.failed` with the underlying git error as the reason — no repo ever silently disappears from the pipeline.
 
 ---
 
 ## Parse Service (port 8002)
 
-Subscribes to `code-inspect.project.checked_out`. For every included file (`.js .ts .php .go .yaml .yml .md`, skipping `.git node_modules vendor dist build coverage`, binaries detected by a null-byte sniff, and anything over 2MB):
+Subscribes to `code-inspect.project.checkedout.completed`. For every included file (`.js .ts .php .go .yaml .yml .md`, skipping `.git node_modules vendor dist build coverage`, binaries detected by a null-byte sniff, and anything over 2MB):
 
 - **JS / TS / Go / PHP** — real Tree-sitter grammars extract `function` / `class` / `method` / `interface` symbols (Go structs map to `class`) with exact start/end lines and raw source text.
 - **YAML** — each document with a `kind` + `metadata.name` becomes a `resource` symbol (`Deployment/auth-service`), Kubernetes-flavored per SPECS' code intelligence model.
@@ -214,7 +220,7 @@ Subscribes to `code-inspect.project.checked_out`. For every included file (`.js 
 - **API endpoints** — regex-based first pass over the raw file text for NestJS (`@Get`/`@Post`/…), Express (`app.get`/`router.post`/…), Go `net/http` (`HandleFunc`), and Laravel (`Route::get`/…).
 - **Dependencies** — each file's imports (`import`/`use`/Go import path) are cross-referenced against identifiers appearing in each symbol's body; a match becomes a `symbol_dependencies` row.
 
-Publishes `code-inspect.project.parsed` on success, `code-inspect.project.failed` (stage `PARSED`) on any error. Re-processing a project (redelivery, manual re-run) deletes and rewrites its rows rather than duplicating them.
+Publishes `code-inspect.project.parse.completed` on success, `code-inspect.project.parse.failed` (stage `PARSED`) on any error. Re-processing a project (redelivery, manual re-run) deletes and rewrites its rows rather than duplicating them.
 
 ---
 
@@ -226,7 +232,7 @@ A standalone HTTP service, used by both the ingestion pipeline and the RAG pipel
 
 ## Index Service (port 8004)
 
-Subscribes to `code-inspect.project.parsed`. Reads every row from `parse.symbols` for the project, builds one chunk per symbol (oversized ones split into 2000-character chunks with 200-character overlap), and embeds them in batches of 64 via the Embedding Service. Each chunk is stored in `index.symbol_embeddings`:
+Subscribes to `code-inspect.project.parse.completed`. Reads every row from `parse.symbols` for the project, builds one chunk per symbol (oversized ones split into 2000-character chunks with 200-character overlap), and embeds them in batches of 64 via the Embedding Service. Each chunk is stored in `index.symbol_embeddings`:
 
 ```sql
 CREATE TABLE index.symbol_embeddings (
@@ -242,7 +248,7 @@ CREATE TABLE index.symbol_embeddings (
 );
 ```
 
-One column, two search strategies: `embedding <=> $1` for cosine-distance vector search, `search_vector @@ to_tsquery(...)` for keyword search — both queried directly against the same rows, no separate keyword index to keep in sync. No ANN index (ivfflat/hnsw) yet; brute-force distance scans are fine at MVP scale. Publishes `code-inspect.project.indexed` then immediately `code-inspect.project.ready` (no intermediate stages yet, by design — SPECS calls this out explicitly so future stages can slot in without changing the external contract). This table is also what Retrieval Service's hybrid retrieval step reads from at query time — Index Service only ever writes it.
+One column, two search strategies: `embedding <=> $1` for cosine-distance vector search, `search_vector @@ to_tsquery(...)` for keyword search — both queried directly against the same rows, no separate keyword index to keep in sync. No ANN index (ivfflat/hnsw) yet; brute-force distance scans are fine at MVP scale. Publishes `code-inspect.project.index.completed` on success (backend treats this as the project reaching `READY` directly — indexing is the last pipeline stage, so there's no separate `.ready` event) or `code-inspect.project.index.failed` on error. This table is also what Retrieval Service's hybrid retrieval step reads from at query time — Index Service only ever writes it.
 
 ---
 

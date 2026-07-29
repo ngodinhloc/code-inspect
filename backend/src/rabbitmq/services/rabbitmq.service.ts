@@ -12,7 +12,7 @@ import {
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
-  private pendingSubscriptions: Subscription[] = [];
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private readonly logger: AppLogger,
@@ -21,10 +21,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     await this.connect(this.envService.getRabbitMqUrl());
-    for (const sub of this.pendingSubscriptions) {
+    for (const sub of this.subscriptions) {
       await this.bindSubscription(sub);
     }
-    this.pendingSubscriptions = [];
+    this.subscriptions = [];
   }
 
   private async connect(url: string, attempt = 1): Promise<void> {
@@ -84,7 +84,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     const sub: Subscription = { queue, bindings, handler };
     if (!this.channel) {
-      this.pendingSubscriptions.push(sub);
+      this.subscriptions.push(sub);
       return;
     }
     await this.bindSubscription(sub);
@@ -99,16 +99,22 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     bindings,
     handler,
   }: Subscription): Promise<void> {
+    // dedup the exchanges
     const exchanges = new Set(bindings.map((b) => b.exchange));
     for (const exchange of exchanges) {
       await this.channel!.assertExchange(exchange, 'topic', {
         durable: true,
       });
     }
+
     await this.channel!.assertQueue(queue, { durable: true });
     for (const { exchange, routingKey } of bindings) {
       await this.channel!.bindQueue(queue, exchange, routingKey);
+      await this.channel!.assertExchange(exchange, 'topic', {
+        durable: true,
+      });
     }
+    
     await this.channel!.consume(queue, (msg) => {
       if (!msg) return;
       const routingKey = msg.fields.routingKey;
@@ -121,6 +127,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           this.logger.log('RabbitMQService.consume: received', {
             queue,
             routingKey,
+            payload
           });
           await handler(payload, routingKey);
           this.channel!.ack(msg);

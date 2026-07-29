@@ -14,8 +14,10 @@ export enum ProjectStatus {
 export const EXCHANGE_PROJECT = 'code-inspect.project';
 
 export const EVENT_PROJECT_STARTED = 'code-inspect.project.started';
-export const EVENT_PROJECT_CHECKED_OUT = 'code-inspect.project.checked_out';
-export const EVENT_PROJECT_FAILED = 'code-inspect.project.failed';
+export const EVENT_PROJECT_CHECKOUT_COMPLETED =
+  'code-inspect.project.checkedout.completed';
+export const EVENT_PROJECT_CHECKOUT_FAILED =
+  'code-inspect.project.checkout.failed';
 
 export const QUEUE_CHECKOUT_STARTED = 'code-inspect.checkout.queue';
 

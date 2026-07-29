@@ -3,8 +3,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { ChatModule } from '../chat/chat.module';
 import { ProjectCheckedOutHandler } from './handlers/project-checked-out.handler';
 import { ProjectParsedHandler } from './handlers/project-parsed.handler';
-import { ProjectIndexedHandler } from './handlers/project-indexed.handler';
-import { ProjectReadyHandler } from './handlers/project-ready.handler';
+import { ProjectIndexCompletedHandler } from './handlers/project-index-completed.handler';
 import { ProjectFailedHandler } from './handlers/project-failed.handler';
 import { ChatCompletedHandler } from './handlers/chat-completed.handler';
 import { ChatFailedHandler } from './handlers/chat-failed.handler';
@@ -17,8 +16,7 @@ import { RabbitMqConsumer } from './services/rabbitmq.consumer';
   providers: [
     ProjectCheckedOutHandler,
     ProjectParsedHandler,
-    ProjectIndexedHandler,
-    ProjectReadyHandler,
+    ProjectIndexCompletedHandler,
     ProjectFailedHandler,
     ChatCompletedHandler,
     ChatFailedHandler,
@@ -30,8 +28,7 @@ import { RabbitMqConsumer } from './services/rabbitmq.consumer';
       inject: [
         ProjectCheckedOutHandler,
         ProjectParsedHandler,
-        ProjectIndexedHandler,
-        ProjectReadyHandler,
+        ProjectIndexCompletedHandler,
         ProjectFailedHandler,
         ChatCompletedHandler,
         ChatFailedHandler,

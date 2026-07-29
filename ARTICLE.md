@@ -415,6 +415,30 @@ This closes a gap that was easy to miss during development: the reply content wa
 
 **Reading another service's schema for retrieval, but never writing it.** Retrieval Service reads `index.symbol_embeddings` and `parse.symbols` directly via raw SQL — tables it doesn't own — because that's the entire point of hybrid retrieval and citation-building. The rule that survives is narrow and explicit: read access where the whole feature depends on it, write access never.
 
+**Per-stage `.completed`/`.failed` events over one shared `.failed` routing key.** Every pipeline stage publishes its own pair — `checkout.failed`, `parse.failed`, `index.failed` — rather than every stage funneling failures through one generic `code-inspect.project.failed`. A consumer can bind to (or a human scanning RabbitMQ's management UI can filter to) exactly the failure mode it cares about, instead of every failure handler needing to branch on a `stage` field to find out what actually broke.
+
+**`code-inspect.project`** — the ingestion pipeline:
+
+| Publisher | Routing key | Consumer · queue |
+|---|---|---|
+| backend | `code-inspect.project.started` | checkout-service · `code-inspect.checkout.queue` |
+| checkout-service | `code-inspect.project.checkedout.completed` | backend · `code-inspect.backend.queue`; parse-service · `code-inspect.parse.queue` |
+| checkout-service | `code-inspect.project.checkout.failed` | backend · `code-inspect.backend.queue` |
+| parse-service | `code-inspect.project.parse.completed` | backend · `code-inspect.backend.queue`; index-service · `code-inspect.index.queue` |
+| parse-service | `code-inspect.project.parse.failed` | backend · `code-inspect.backend.queue` |
+| index-service | `code-inspect.project.index.completed` | backend · `code-inspect.backend.queue` |
+| index-service | `code-inspect.project.index.failed` | backend · `code-inspect.backend.queue` |
+
+**`code-inspect.chat`** — the RAG pipeline:
+
+| Publisher | Routing key | Consumer · queue |
+|---|---|---|
+| backend | `code-inspect.chat.started` | retrieval-service · `code-inspect.retrieval.queue` |
+| retrieval-service | `code-inspect.chat.completed` | backend · `code-inspect.backend.queue` |
+| retrieval-service | `code-inspect.chat.failed` | backend · `code-inspect.backend.queue` |
+
+**One queue per service, not one queue per event.** `code-inspect.backend.queue` is bound to all 8 routing keys above (6 on `code-inspect.project`, 2 on `code-inspect.chat`), since backend consumes far more events than any other service — one queue with many bindings, rather than eight single-purpose queues. Indexing is the last pipeline stage, so `code-inspect.project.index.completed` marks the project `READY` directly; there's no separate `.ready` event to consume.
+
 ---
 
 ## Source Code
