@@ -114,7 +114,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         durable: true,
       });
     }
-    
+
     await this.channel!.consume(queue, (msg) => {
       if (!msg) return;
       const routingKey = msg.fields.routingKey;
@@ -127,7 +127,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           this.logger.log('RabbitMQService.consume: received', {
             queue,
             routingKey,
-            payload
+            payload,
           });
           await handler(payload, routingKey);
           this.channel!.ack(msg);

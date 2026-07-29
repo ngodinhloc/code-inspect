@@ -24,7 +24,9 @@ const ENTITIES = [File, CodeSymbol, SymbolDependency, ApiEndpoint];
           url: databaseUrl,
           schema,
           entities: ENTITIES,
-          synchronize: true,
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          migrationsRun: true,
+          synchronize: false,
           logging: false,
         };
       },

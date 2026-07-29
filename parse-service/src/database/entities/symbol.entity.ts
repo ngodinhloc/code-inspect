@@ -3,9 +3,12 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
   Index,
 } from 'typeorm';
 import { SymbolKind } from '../../parse/contracts/project.interface';
+import { File } from './file.entity';
 
 // Named CodeSymbol (not `Symbol`) to avoid shadowing the built-in global.
 @Entity('symbols')
@@ -17,8 +20,13 @@ export class CodeSymbol {
   @Column({ name: 'project_id', type: 'uuid' })
   projectId!: string;
 
-  @Column({ name: 'file_path', type: 'varchar', length: 1000 })
-  filePath!: string;
+  @Index()
+  @Column({ name: 'file_id' })
+  fileId!: number;
+
+  @ManyToOne(() => File)
+  @JoinColumn({ name: 'file_id' })
+  file!: File;
 
   @Column({ type: 'varchar', length: 20 })
   type!: SymbolKind;

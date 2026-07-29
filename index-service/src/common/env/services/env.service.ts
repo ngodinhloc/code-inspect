@@ -25,4 +25,8 @@ export class EnvService {
       'http://localhost:8000'
     );
   }
+
+  getDatabaseSchema(): string {
+    return this.configService.get<string>('DATABASE_SCHEMA') ?? 'index';
+  }
 }

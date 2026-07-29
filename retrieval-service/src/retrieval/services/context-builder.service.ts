@@ -38,9 +38,10 @@ export class ContextBuilderService {
 
     const symbolIds = chunks.map((c) => c.symbolId);
     const rows: SymbolRow[] = await this.dataSource.query(
-      `SELECT id, file_path AS "filePath", name, start_line AS "startLine"
-       FROM "parse".symbols
-       WHERE id = ANY($1::int[])`,
+      `SELECT s.id, f.path AS "filePath", s.name, s.start_line AS "startLine"
+       FROM "parse".symbols s
+       JOIN "parse".files f ON f.id = s.file_id
+       WHERE s.id = ANY($1::int[])`,
       [symbolIds],
     );
     this.logger.log('ContextBuilderService.build: symbols resolved', {

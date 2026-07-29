@@ -21,7 +21,9 @@ import { EnvService } from '../common/env/services/env.service';
           url: databaseUrl,
           schema,
           entities: [Project, ProjectStatusHistory, Chat],
-          synchronize: true,
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          migrationsRun: true,
+          synchronize: false,
           logging: false,
         };
       },

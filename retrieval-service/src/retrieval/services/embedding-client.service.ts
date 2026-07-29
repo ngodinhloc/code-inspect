@@ -13,7 +13,7 @@ export class EmbeddingClientService {
     this.logger.log('EmbeddingClientService.embed: starting', {
       projectId,
       textLength: text.length,
-      text
+      text,
     });
     const res = await fetch(
       `${this.envService.getEmbeddingServiceUrl()}/api/embed`,

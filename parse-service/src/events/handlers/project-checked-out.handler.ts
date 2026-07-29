@@ -138,25 +138,28 @@ export class ProjectCheckedOutHandler implements EventHandler {
   ): Promise<void> {
     await this.clearProject(projectId);
 
-    if (parsedFiles.length > 0) {
-      await this.fileRepo.save(
-        parsedFiles.map((f) =>
-          this.fileRepo.create({
-            projectId,
-            path: f.relativePath,
-            language: f.language,
-            size: Buffer.byteLength(f.content),
-            content: f.content,
-          }),
-        ),
-      );
-    }
+    const savedFiles =
+      parsedFiles.length > 0
+        ? await this.fileRepo.save(
+            parsedFiles.map((f) =>
+              this.fileRepo.create({
+                projectId,
+                path: f.relativePath,
+                language: f.language,
+                size: Buffer.byteLength(f.content),
+                content: f.content,
+              }),
+            ),
+          )
+        : [];
+    // Each relativePath is unique within a project, so this 1:1 lookup is safe.
+    const fileIdByPath = new Map(savedFiles.map((f) => [f.path, f.id]));
 
     const endpointEntities = parsedFiles.flatMap((f) =>
       f.endpoints.map((e) =>
         this.endpointRepo.create({
           projectId,
-          filePath: f.relativePath,
+          fileId: fileIdByPath.get(f.relativePath)!,
           method: e.method,
           path: e.path,
           handlerName: e.handlerName,
@@ -174,7 +177,7 @@ export class ProjectCheckedOutHandler implements EventHandler {
         file.symbols.map((s) =>
           this.symbolRepo.create({
             projectId,
-            filePath: file.relativePath,
+            fileId: fileIdByPath.get(file.relativePath)!,
             type: s.type,
             name: s.name,
             language: file.language,

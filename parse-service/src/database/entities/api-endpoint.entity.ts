@@ -3,8 +3,11 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
   Index,
 } from 'typeorm';
+import { File } from './file.entity';
 
 @Entity('api_endpoints')
 export class ApiEndpoint {
@@ -15,8 +18,13 @@ export class ApiEndpoint {
   @Column({ name: 'project_id', type: 'uuid' })
   projectId!: string;
 
-  @Column({ name: 'file_path', type: 'varchar', length: 1000 })
-  filePath!: string;
+  @Index()
+  @Column({ name: 'file_id' })
+  fileId!: number;
+
+  @ManyToOne(() => File)
+  @JoinColumn({ name: 'file_id' })
+  file!: File;
 
   @Column({ type: 'varchar', length: 10 })
   method!: string;

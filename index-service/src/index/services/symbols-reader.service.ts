@@ -21,10 +21,11 @@ export class SymbolsReaderService {
 
   async findByProject(projectId: string): Promise<SymbolRow[]> {
     return this.dataSource.query(
-      `SELECT id, file_path AS "filePath", type, name, language, content, start_line AS "startLine", end_line AS "endLine"
-       FROM "parse".symbols
-       WHERE project_id = $1
-       ORDER BY file_path, start_line`,
+      `SELECT s.id, f.path AS "filePath", s.type, s.name, s.language, s.content, s.start_line AS "startLine", s.end_line AS "endLine"
+       FROM "parse".symbols s
+       JOIN "parse".files f ON f.id = s.file_id
+       WHERE s.project_id = $1
+       ORDER BY f.path, s.start_line`,
       [projectId],
     );
   }

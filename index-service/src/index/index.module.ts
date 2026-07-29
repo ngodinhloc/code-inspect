@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
 import { SymbolsReaderService } from './services/symbols-reader.service';
 import { EmbeddingClientService } from './services/embedding-client.service';
-import { SymbolEmbeddingsSchemaService } from './services/symbol-embeddings-schema.service';
 
-// Domain support for the index pipeline stage — reading parsed symbols,
-// calling out to Embedding Service, and bootstrapping this service's own
-// `index.symbol_embeddings` schema at startup. Consumed by EventModule's
-// ProjectParsedHandler; this module owns no event-dispatch logic itself.
+// Domain support for the index pipeline stage — reading parsed symbols and
+// calling out to Embedding Service. `index.symbol_embeddings` schema setup now
+// runs via DatabaseModule's migrations, not a bootstrapping service here.
+// Consumed by EventModule's ProjectParsedHandler; this module owns no
+// event-dispatch logic itself.
 @Module({
-  providers: [
-    SymbolsReaderService,
-    EmbeddingClientService,
-    SymbolEmbeddingsSchemaService,
-  ],
+  providers: [SymbolsReaderService, EmbeddingClientService],
   exports: [SymbolsReaderService, EmbeddingClientService],
 })
 export class IndexModule {}
