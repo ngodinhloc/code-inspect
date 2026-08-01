@@ -12,6 +12,20 @@ export const QUEUE_RETRIEVAL_CHAT_STARTED = 'code-inspect.retrieval.queue';
 
 export const CHAT_CACHE_TTL_SECONDS = 7200;
 
+export enum AnthropicModel {
+  CLAUDE_FABLE_5 = 'claude-fable-5',
+  CLAUDE_MYTHOS_5 = 'claude-mythos-5',
+  CLAUDE_OPUS_5 = 'claude-opus-5',
+  CLAUDE_OPUS_4_8 = 'claude-opus-4-8',
+  CLAUDE_OPUS_4_7 = 'claude-opus-4-7',
+  CLAUDE_OPUS_4_6 = 'claude-opus-4-6',
+  CLAUDE_SONNET_5 = 'claude-sonnet-5',
+  CLAUDE_SONNET_4_6 = 'claude-sonnet-4-6',
+  CLAUDE_HAIKU_4_5 = 'claude-haiku-4-5',
+}
+
+export const ANSWER_MODEL = AnthropicModel.CLAUDE_HAIKU_4_5;
+
 export type ChatStep =
   | 'query_understanding'
   | 'hybrid_retrieval'
@@ -61,4 +75,8 @@ export interface ChatFailedEvent {
   chatId: string;
   projectId: string;
   reason: string;
+}
+
+export interface AnswerResult {
+  answer: string;
 }

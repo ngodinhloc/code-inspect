@@ -1,20 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { AppLogger } from '../../common/logger/services/app-logger';
+import { ANSWER_MODEL, AnswerResult } from '../contracts/chat.interface';
+import { SYSTEM_PROMPT } from '../templates/answer.template';
 
-const MODEL = 'claude-opus-4-8';
 const MAX_TOKENS = 4096;
-
-const SYSTEM_PROMPT =
-  'You are a code intelligence assistant. Answer the question using only the provided code context. ' +
-  'Be specific and reference file paths and symbol names from the context. If the context does not ' +
-  'contain enough information to answer, say so plainly rather than guessing. ' +
-  'Respond in plain prose only — the reply is rendered as plain text, not Markdown, so do not use ' +
-  'headings, bold/italic asterisks, or bullet-point markup.';
-
-export interface AnswerResult {
-  answer: string;
-}
 
 @Injectable()
 export class AnswerService {
@@ -29,11 +19,11 @@ export class AnswerService {
   ): Promise<AnswerResult> {
     this.logger.log('AnswerService.answer: calling Claude', {
       projectId,
-      model: MODEL,
+      model: ANSWER_MODEL,
       contextLength: contextPrompt.length,
     });
     const response = await this.client.messages.create({
-      model: MODEL,
+      model: ANSWER_MODEL,
       max_tokens: MAX_TOKENS,
       thinking: { type: 'adaptive' },
       system: SYSTEM_PROMPT,

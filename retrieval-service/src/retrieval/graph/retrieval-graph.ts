@@ -56,7 +56,7 @@ export class RetrievalGraph {
       .addNode('skip_rerank', (state) => this.skipRerankNode.run(state))
       .addNode('rerank', (state) => this.rerankNode.run(state))
       .addNode('context_builder', (state) => this.contextBuilderNode.run(state))
-      .addNode('generate_answer', (state) => this.answerNode.run(state))
+      .addNode('answer', (state) => this.answerNode.run(state))
       .addEdge(START, 'query_understanding')
       .addEdge('query_understanding', 'hybrid_retrieval')
       .addEdge('hybrid_retrieval', 'fusion')
@@ -68,8 +68,8 @@ export class RetrievalGraph {
       .addEdge('advance_attempt', 'query_understanding')
       .addEdge('skip_rerank', 'context_builder')
       .addEdge('rerank', 'context_builder')
-      .addEdge('context_builder', 'generate_answer')
-      .addEdge('generate_answer', END)
+      .addEdge('context_builder', 'answer')
+      .addEdge('answer', END)
       .compile();
   }
 }
