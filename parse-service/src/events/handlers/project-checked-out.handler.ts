@@ -17,8 +17,9 @@ import {
   extractYamlSymbols,
   extractMarkdownSymbols,
 } from '../../parse/services/text-extractors';
+import { extractPdfSymbols } from '../../parse/services/pdf-extractor';
 import { extractApiEndpoints } from '../../parse/services/api-endpoint-extractor';
-import { ParsedFile } from '../../parse/types';
+import { ParsedFile, ExtractedSymbol } from '../../parse/types';
 import { EventHandler } from '../contracts/event.interfaces';
 import {
   EVENT_PROJECT_PARSE_COMPLETED,
@@ -98,23 +99,34 @@ export class ProjectCheckedOutHandler implements EventHandler {
     const parsedFiles: ParsedFile[] = [];
 
     for (const file of walked) {
-      if (!(await this.fileWalker.isEligible(file.absolutePath))) continue;
+      if (
+        !(await this.fileWalker.isEligible(file.absolutePath, file.extension))
+      )
+        continue;
 
-      const content = await readFile(file.absolutePath, 'utf8');
       const language = detectLanguage(file.extension);
 
-      let symbols;
+      let content: string;
+      let symbols: ExtractedSymbol[];
       let imports: string[] = [];
-      if (this.treeSitterExtractor.supports(language)) {
-        const result = this.treeSitterExtractor.extract(language, content);
-        symbols = result.symbols;
-        imports = result.imports;
-      } else if (language === 'yaml') {
-        symbols = extractYamlSymbols(content);
-      } else if (language === 'markdown') {
-        symbols = extractMarkdownSymbols(content);
+      if (language === 'pdf') {
+        const buffer = await readFile(file.absolutePath);
+        const extracted = await extractPdfSymbols(buffer);
+        content = extracted.content;
+        symbols = extracted.symbols;
       } else {
-        symbols = [];
+        content = await readFile(file.absolutePath, 'utf8');
+        if (this.treeSitterExtractor.supports(language)) {
+          const result = this.treeSitterExtractor.extract(language, content);
+          symbols = result.symbols;
+          imports = result.imports;
+        } else if (language === 'yaml') {
+          symbols = extractYamlSymbols(content);
+        } else if (language === 'markdown') {
+          symbols = extractMarkdownSymbols(content);
+        } else {
+          symbols = [];
+        }
       }
 
       parsedFiles.push({

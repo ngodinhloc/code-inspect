@@ -10,6 +10,7 @@ const INCLUDED_EXTENSIONS = new Set([
   '.yaml',
   '.yml',
   '.md',
+  '.pdf',
 ]);
 const EXCLUDED_DIRS = new Set([
   '.git',
@@ -37,6 +38,8 @@ export function detectLanguage(extension: string): string {
       return 'yaml';
     case '.md':
       return 'markdown';
+    case '.pdf':
+      return 'pdf';
     default:
       return 'unknown';
   }
@@ -58,10 +61,12 @@ export class FileWalkerService {
 
   // Files too large to be worth embedding, or that fail the binary sniff, are
   // skipped rather than failing the whole project — one huge generated file
-  // shouldn't block indexing the rest of the repo.
-  async isEligible(absolutePath: string): Promise<boolean> {
+  // shouldn't block indexing the rest of the repo. PDFs are binary by nature
+  // (their text is pulled out separately), so they skip the null-byte sniff.
+  async isEligible(absolutePath: string, extension: string): Promise<boolean> {
     const stats = await stat(absolutePath);
     if (stats.size === 0 || stats.size > MAX_FILE_SIZE_BYTES) return false;
+    if (extension === '.pdf') return true;
     return !(await this.looksBinary(absolutePath, stats.size));
   }
 
