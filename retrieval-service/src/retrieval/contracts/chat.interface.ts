@@ -24,7 +24,7 @@ export enum AnthropicModel {
   CLAUDE_HAIKU_4_5 = 'claude-haiku-4-5',
 }
 
-export const ANSWER_MODEL = AnthropicModel.CLAUDE_HAIKU_4_5;
+export const ANSWER_MODEL = AnthropicModel.CLAUDE_SONNET_5;
 
 export type ChatStep =
   | 'query_understanding'
